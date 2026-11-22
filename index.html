@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DS-Whalegirl·虹 · 数字党校视频自动推进（ScriptCat 油猴脚本）</title>
+<meta name="description" content="中国矿业大学（北京）数字党校培训平台的视频自动推进脚本。固定 1x、断流自动拉起、弹窗自动确认，实测 6 讲 30 分钟无人值守跑完。本页给出已实测的稳定使用办法、待改进问题与反馈渠道。">
+<meta property="og:title" content="DS-Whalegirl·虹 · 数字党校视频自动推进">
+<meta property="og:description" content="固定 1x、断流自愈、弹窗自动确认。实测 6 讲 30 分钟无人值守跑完，学时 7.7 → 8.4。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://dream-architect1026.github.io/ds-whalegirl-hong/">
+<meta property="og:image" content="https://dream-architect1026.github.io/ds-whalegirl-hong/assets/mascot-256.png">
+<link rel="canonical" href="https://dream-architect1026.github.io/ds-whalegirl-hong/">
+<link rel="icon" href="./assets/mascot-256.png">
+<style>
+:root{
+  --bg:#0A0507;--card:#120A0C;--ink:#FFF0EE;--dim:#CFA9A3;--dim2:#8E7070;
+  --r1:rgba(255,90,90,.14);--r2:rgba(255,90,90,.28);--r3:rgba(255,90,90,.44);
+  --r4:rgba(255,90,90,.62);--r5:rgba(255,90,90,.82);
+  --acc:#FF5A5A;--deep:#C8102E;--warm:#FF8A5C;
+  --glass:rgba(28,10,14,.42);--max:1180px;
+  --serif:"Songti SC","Noto Serif SC","Source Han Serif SC",STSong,serif;
+  --sans:"HarmonyOS Sans SC","MiSans","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:64px;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.9;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+img{max-width:100%;display:block}
+a{color:var(--acc);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:.86em;padding:1px 5px;border-radius:4px;
+  background:rgba(255,90,90,.10);border:1px solid var(--r1);color:#FFC9C2}
+::selection{background:rgba(255,90,90,.28);color:#fff}
+
+/* 顶栏 */
+.top{position:sticky;top:0;z-index:50;background:rgba(10,5,7,.80);
+  backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);
+  border-bottom:1px solid var(--r1)}
+.top .wrap{display:flex;align-items:center;gap:12px;height:58px}
+.mark{width:26px;height:26px;border-radius:50%;overflow:hidden;flex:0 0 auto;
+  border:1px solid var(--r3);box-shadow:0 0 14px rgba(255,90,90,.22)}
+.mark img{width:100%;height:100%;object-fit:cover}
+.brand{font-size:14px;font-weight:650;letter-spacing:.03em;white-space:nowrap}
+.brand em{font-style:normal;color:var(--acc)}
+.pill{font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:999px;color:var(--dim);
+  border:1px solid var(--r2);background:rgba(255,90,90,.07);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.nav{margin-left:auto;display:flex;gap:2px;font-size:13px}
+.nav a{color:var(--dim);padding:6px 9px;border-radius:999px;transition:color .22s,background .22s}
+.nav a:hover{color:var(--ink);background:rgba(255,255,255,.045);text-decoration:none}
+
+/* 首屏 */
+.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--r1)}
+.hero-bg{position:absolute;inset:0;z-index:0;background-image:url("./assets/bg-1600.jpg");
+  background-size:cover;background-position:72% 32%;opacity:.72}
+.hero-bg::after{content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(95deg,rgba(10,5,7,.96) 0%,rgba(10,5,7,.86) 34%,rgba(10,5,7,.46) 58%,rgba(10,5,7,.20) 78%,rgba(10,5,7,.64) 100%),
+    linear-gradient(180deg,rgba(10,5,7,.72) 0,rgba(10,5,7,0) 22%,rgba(10,5,7,0) 62%,rgba(10,5,7,.96) 100%),
+    radial-gradient(620px 420px at 8% 82%,rgba(200,16,46,.20),transparent 68%)}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 28px;position:relative;z-index:1}
+.hero-in{display:grid;grid-template-columns:1.06fr .94fr;gap:56px;align-items:center;
+  padding:74px 0 62px;position:relative;z-index:1}
+.eyebrow{display:flex;align-items:center;gap:9px;font-size:11.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim2);font-family:var(--mono)}
+.eyebrow::before{content:"";width:22px;height:1px;background:var(--r4);flex:0 0 auto}
+h1{font-family:var(--serif);font-weight:900;line-height:1.05;letter-spacing:-.02em;
+  font-size:clamp(40px,5.6vw,64px);margin-top:16px;
+  background:linear-gradient(112deg,#FFFFFF 8%,#FFD9D2 40%,var(--acc) 78%,var(--deep) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+h1 small{display:block;font-family:var(--sans);font-size:clamp(13px,1.5vw,15px);font-weight:500;
+  letter-spacing:.34em;color:var(--dim2);margin-top:14px;-webkit-text-fill-color:var(--dim2)}
+.lede{max-width:36ch;margin-top:20px;font-size:16px;line-height:1.95;color:#EBC8C1}
+.lede b{color:var(--ink);font-weight:650}
+.notice{display:flex;align-items:center;gap:10px;margin-top:26px;font-size:12.5px;
+  color:var(--dim);flex-wrap:wrap}
+.notice .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:1px 7px;
+  border-radius:999px;border:1px solid var(--r3);color:var(--acc);background:rgba(255,90,90,.08)}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:30px}
+.btn{position:relative;display:inline-flex;align-items:center;justify-content:center;min-height:44px;
+  padding:0 22px;border-radius:8px;font-size:14px;font-weight:600;color:var(--ink);
+  border:1px solid var(--r3);background:rgba(255,90,90,.08);
+  transition:transform .24s cubic-bezier(.34,1.2,.64,1),background .24s,border-color .24s,box-shadow .24s}
+.btn span{position:relative;z-index:2}
+.btn::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1px 0 rgba(255,220,214,.30),inset 0 -1px 0 rgba(255,220,214,.08)}
+.btn:hover{text-decoration:none;transform:translateY(-2px);border-color:var(--r4);
+  box-shadow:0 10px 26px rgba(0,0,0,.45),0 0 22px rgba(255,90,90,.18)}
+.btn.pri{background:linear-gradient(135deg,rgba(200,16,46,.86),rgba(255,90,90,.58));
+  border-color:rgba(255,140,132,.56);color:#fff}
+.figs{display:grid;grid-template-columns:repeat(4,1fr);margin-top:44px;
+  border-top:1px solid var(--r1);padding-top:20px}
+.fig{padding-right:14px}
+.fig .v{font-size:clamp(22px,2.4vw,28px);font-weight:700;letter-spacing:-.02em;line-height:1.2;
+  color:#FFF3F0;font-variant-numeric:tabular-nums;
+  text-shadow:0 1px 0 rgba(0,0,0,.6),0 0 22px rgba(255,90,90,.35)}
+.fig .v i{font-style:normal;font-size:12px;font-weight:500;color:var(--dim);margin-left:2px}
+.fig .k{font-size:11.5px;color:var(--dim2);margin-top:5px}
+
+/* 纵向时间轴 */
+.tl{position:relative;padding:6px 0}
+.tl::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;transform-origin:top center;
+  background:linear-gradient(180deg,transparent,var(--r2) 12%,var(--r3) 52%,var(--r2) 88%,transparent);
+  animation:tlIn 1.1s cubic-bezier(.2,.72,.2,1) both}
+@keyframes tlIn{from{transform:scaleY(.55);opacity:.2}to{transform:scaleY(1);opacity:1}}
+.tl-item{position:relative;width:50%;padding:0 22px 30px 0;text-align:right}
+.tl-item:nth-child(even){margin-left:50%;padding:0 0 30px 22px;text-align:left}
+.tl-item::after{content:"";position:absolute;top:7px;right:-4.5px;width:8px;height:8px;border-radius:50%;
+  background:var(--acc);box-shadow:0 0 0 4px rgba(255,90,90,.10),0 0 14px rgba(255,90,90,.55)}
+.tl-item:nth-child(even)::after{right:auto;left:-4.5px}
+.tl-item.now::after{animation:dotPulse 2.6s ease-in-out infinite}
+@keyframes dotPulse{0%,100%{box-shadow:0 0 0 4px rgba(255,90,90,.10),0 0 12px rgba(255,90,90,.45)}
+  50%{box-shadow:0 0 0 8px rgba(255,90,90,.04),0 0 20px rgba(255,90,90,.80)}}
+.tl-h{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--acc);font-variant-numeric:tabular-nums}
+.tl-t{font-size:13px;color:var(--dim);margin-top:4px;line-height:1.7}
+.tl-t b{color:var(--ink);font-weight:600}
+
+/* 区块 */
+section.sec{padding:76px 0 0}
+.sec-h{display:grid;grid-template-columns:auto 1fr;gap:0 18px;align-items:end;
+  padding-bottom:14px;border-bottom:1px solid var(--r1);margin-bottom:30px}
+.sec-n{font-family:var(--serif);font-weight:900;font-size:clamp(30px,4vw,48px);line-height:.86;
+  color:var(--r3);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.sec-t{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.sec-t h2{font-size:clamp(20px,2.2vw,25px);font-weight:700;letter-spacing:-.01em}
+.sec-t .en{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--dim2);text-transform:uppercase}
+.sec-note{grid-column:2;font-size:13px;color:var(--dim);margin-top:7px;max-width:62ch}
+.prose{max-width:62ch;font-size:14.5px;line-height:1.95;color:#DDB9B2}
+.prose p+p{margin-top:10px}
+.prose b{color:var(--ink);font-weight:650}
+.card{background:var(--glass);border:1px solid var(--r1);border-radius:10px;
+  box-shadow:inset 0 1px 0 rgba(255,226,220,.22),inset 0 -1px 0 rgba(255,226,220,.06),0 14px 34px rgba(0,0,0,.34);
+  backdrop-filter:blur(12px) saturate(125%);-webkit-backdrop-filter:blur(12px) saturate(125%)}
+
+/* 问题卡 */
+.pain{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
+.pain .card{padding:20px 20px 22px}
+.pain h3{font-size:14.5px;font-weight:650;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.pain h3::before{content:"";width:6px;height:6px;border-radius:50%;flex:0 0 auto;
+  background:var(--acc);box-shadow:0 0 10px rgba(255,90,90,.7)}
+.pain p{font-size:13.5px;line-height:1.85;color:var(--dim)}
+
+/* 步骤 */
+.steps{counter-reset:s;margin-top:8px}
+.step{display:grid;grid-template-columns:44px 1fr;gap:18px;padding:22px 0;
+  border-bottom:1px solid var(--r1);counter-increment:s}
+.step:last-child{border-bottom:0}
+.step::before{content:counter(s,decimal-leading-zero);font-family:var(--mono);font-size:12px;
+  color:var(--acc);letter-spacing:.06em;padding-top:4px;font-variant-numeric:tabular-nums}
+.step h3{font-size:15px;font-weight:650;margin-bottom:6px}
+.step p{font-size:13.5px;line-height:1.9;color:var(--dim);max-width:62ch}
+.step p+p{margin-top:6px}
+.step .k{font-family:var(--mono);font-size:11.5px;color:#FFC9C2}
+
+/* 内核矩阵 */
+.mx{display:grid;grid-template-columns:repeat(2,1fr);gap:0 40px}
+.mx-it{padding:16px 0;border-top:1px solid var(--r1);display:grid;grid-template-columns:auto 1fr;gap:12px}
+.mx-it .lb{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--dim2);padding-top:3px}
+.mx-it h4{font-size:14px;font-weight:650;margin-bottom:5px}
+.mx-it p{font-size:13px;line-height:1.85;color:var(--dim)}
+
+/* 清单 */
+.li{display:grid;grid-template-columns:96px 1fr;gap:18px;padding:16px 0;border-top:1px solid var(--r1);align-items:start}
+.li .lv{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;padding-top:2px}
+.li .lv.ph{color:var(--warm)}
+.li .lv.ok{color:#8FD9A8}
+.li h4{font-size:14px;font-weight:650;margin-bottom:4px}
+.li p{font-size:13px;line-height:1.85;color:var(--dim)}
+
+/* 反馈 */
+.report{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:start;margin-top:8px}
+.grp{padding:22px}
+.grp .qid{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.grp .qid b{font-family:var(--mono);font-size:19px;letter-spacing:.06em;color:#fff;font-variant-numeric:tabular-nums}
+.copy{min-height:44px;padding:0 16px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--ink);
+  background:rgba(255,90,90,.10);border:1px solid var(--r3);cursor:pointer;
+  transition:background .22s,transform .22s}
+.copy:hover{background:rgba(255,90,90,.18);transform:translateY(-1px)}
+.grp p{font-size:13px;color:var(--dim);margin-top:10px;line-height:1.85}
+.tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.tags span{font-size:12px;padding:2px 9px;border-radius:999px;color:var(--dim);
+  border:1px solid var(--r1);background:rgba(255,255,255,.03)}
+.req{font-size:13.5px;line-height:1.95;color:var(--dim);max-width:44ch}
+.req b{color:var(--ink)}
+.req ol{padding-left:18px;margin-top:10px}
+.req li{margin-bottom:6px}
+
+/* 须知 */
+.terms li{list-style:none;display:grid;grid-template-columns:26px 1fr;gap:14px;padding:14px 0;
+  border-top:1px solid var(--r1);font-size:13px;line-height:1.85;color:var(--dim)}
+.terms li:first-child{border-top:0}
+.terms .n{font-family:var(--mono);font-size:11px;color:var(--r3);padding-top:2px}
+.terms b{color:var(--ink);font-weight:650}
+
+/* 页脚 */
+footer{margin-top:88px;border-top:1px solid var(--r1);padding:44px 0 46px}
+.f-top{display:flex;align-items:flex-start;justify-content:space-between;gap:34px;flex-wrap:wrap}
+.f-l{font-size:13px;color:var(--dim);line-height:1.9}
+.f-l b{display:block;font-size:15px;color:var(--ink);font-weight:650;margin-bottom:4px;letter-spacing:.02em}
+.f-links{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;margin-top:12px}
+.f-links a{color:var(--dim2)}
+.f-links a:hover{color:var(--acc)}
+.sign{margin-top:30px;padding:20px 16px;border-radius:14px;text-align:center;
+  border:1px solid var(--r1);background:rgba(255,255,255,.025);box-shadow:inset 0 1px 0 rgba(255,226,220,.12)}
+.sign p:first-child{font-size:13px;letter-spacing:.04em;color:#F5DDD7}
+.sign p:first-child b{font-weight:700;letter-spacing:.06em;
+  background:linear-gradient(100deg,var(--acc),var(--warm));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sign p:last-child{font-size:11.5px;color:var(--dim2);margin-top:5px;font-family:var(--mono);letter-spacing:.04em}
+
+/* 入场 */
+.rv{opacity:0;transform:translateY(16px);animation:rv .75s cubic-bezier(.2,.72,.2,1) forwards}
+@keyframes rv{to{opacity:1;transform:none}}
+.d1{animation-delay:.06s}.d2{animation-delay:.16s}.d3{animation-delay:.26s}
+.d4{animation-delay:.36s}.d5{animation-delay:.46s}
+
+@media (max-width:980px){
+  .hero-in{grid-template-columns:1fr;gap:38px;padding:56px 0 48px}
+  .hero-bg{background-position:64% 18%;opacity:.62}
+  h1{font-size:clamp(36px,8vw,50px)}
+  .lede{max-width:none}
+  .figs{grid-template-columns:repeat(2,1fr);gap:16px 0}
+  .pain{grid-template-columns:1fr}
+  .mx{grid-template-columns:1fr;gap:0}
+  .report{grid-template-columns:1fr;gap:22px}
+}
+@media (max-width:640px){
+  .wrap{padding:0 20px}
+  body{font-size:14px;line-height:1.9}
+  .top .wrap{height:54px;gap:9px}
+  .brand{font-size:13px}
+  .pill{display:none}
+  .nav{flex:1 1 0;min-width:0;margin-left:6px;justify-content:flex-end;gap:0}
+  .nav a{flex:1 1 0;min-width:0;font-size:11.5px;padding:6px 2px;text-align:center;letter-spacing:0}
+  .hero-in{padding:44px 0 40px;gap:30px}
+  h1{font-size:clamp(32px,9.4vw,42px)}
+  h1 small{letter-spacing:.22em;font-size:12px}
+  .lede{font-size:14.5px}
+  .cta{flex-direction:column;align-items:stretch}
+  .btn{width:100%}
+  .figs{margin-top:32px;padding-top:16px}
+  .fig .v{font-size:22px}
+  .tl{padding-left:0}
+  .tl::before{left:3px}
+  .tl-item,.tl-item:nth-child(even){width:100%;margin-left:0;text-align:left;padding:0 0 22px 20px}
+  .tl-item::after,.tl-item:nth-child(even)::after{left:-1px;right:auto}
+  section.sec{padding:56px 0 0}
+  .sec-h{gap:0 12px}
+  .sec-note{grid-column:1/-1}
+  .sec-t .en{font-size:10px;letter-spacing:.14em}
+  .step{grid-template-columns:32px 1fr;gap:12px;padding:18px 0}
+  .li{grid-template-columns:72px 1fr;gap:12px}
+  footer{padding:36px 0 40px}
+  .sign{padding:18px 12px}
+}
+@media (max-width:380px){
+  .figs{grid-template-columns:1fr;gap:12px 0}
+  .nav a{font-size:11px;padding:6px 1px}
+  .li{grid-template-columns:1fr;gap:6px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="mark"><img src="./assets/mascot-256.png" alt="鲸娘"></span>
+    <span class="brand">DS-Whalegirl<em>·虹</em></span>
+    <span class="pill">v0.6.2</span>
+    <nav class="nav">
+      <a href="#why">现状</a>
+      <a href="#how">用法</a>
+      <a href="#core">内核</a>
+      <a href="#todo">待改进</a>
+      <a href="#report">反馈</a>
+      <a href="#notice">须知</a>
+      <a href="https://github.com/Dream-Architect1026/ds-whalegirl-hong" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="wrap">
+    <div class="hero-in">
+      <div>
+        <div class="eyebrow rv">CUMTB · 数字党校培训平台 · 非官方辅助工具</div>
+        <h1 class="rv d1">DS-Whalegirl·虹<small>ZHDJ VIDEO RUNNER</small></h1>
+        <p class="lede rv d2">把「必须挂在浏览器前台、停了要人手动拉起」的视频课，交给一个固定 <b>1x</b>、断流自动拉起、弹窗自动确认的脚本。实测 <b>6 讲 30 分钟无人值守跑完</b>，学时 7.7 → 8.4。</p>
+        <div class="notice rv d3">
+          <span class="tag">已上线</span>
+          <span>v0.6.2 · 已实装 ScriptCat</span>
+          <span>·</span>
+          <a href="#how">先读稳定用法 →</a>
+        </div>
+        <div class="cta rv d4">
+          <a class="btn pri" href="#how"><span>稳定使用办法</span></a>
+          <a class="btn" href="https://github.com/Dream-Architect1026/ds-whalegirl-hong" target="_blank" rel="noopener"><span>源码 / 下载脚本</span></a>
+        </div>
+        <div class="figs rv d5">
+          <div class="fig"><div class="v">6<i>讲</i></div><div class="k">单门课一次跑完</div></div>
+          <div class="fig"><div class="v">30<i>min</i></div><div class="k">全程无人介入</div></div>
+          <div class="fig"><div class="v">1.0<i>x</i></div><div class="k">固定倍速</div></div>
+          <div class="fig"><div class="v">0<i>次</i></div><div class="k">人工点继续</div></div>
+        </div>
+      </div>
+
+      <div class="tl rv d3">
+        <div class="tl-item">
+          <div class="tl-h">17:19</div>
+          <div class="tl-t"><b>开局</b> · 课程 9402/737 第 1 讲起播，面板进入 LIVE</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-h">17:24</div>
+          <div class="tl-t"><b>跨讲</b> · 上一讲读满，自助跳下一讲并重绑视频句柄</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-h">17:38</div>
+          <div class="tl-t"><b>自愈</b> · 中途一次停流被自动拉起，未丢学时</div>
+        </div>
+        <div class="tl-item now">
+          <div class="tl-h">17:49</div>
+          <div class="tl-t"><b>收尾</b> · 6 讲全部 100%，学时 7.7 → 8.4</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="wrap">
+
+  <section class="sec" id="why">
+    <div class="sec-h">
+      <div class="sec-n">01</div>
+      <div class="sec-t"><h2>为什么需要一个专用脚本</h2><span class="en">The Problem</span></div>
+      <p class="sec-note">平台把「看完」写成刚性条件：不读完不给学时，读的过程又要求人在场。三条硬约束叠在一起，才是真正的时间黑洞。</p>
+    </div>
+    <div class="prose">
+      <p>通用刷课脚本在别的平台或许够用，在这个站上会连续踩坑：<b>拖进度条无效</b>、<b>跳片尾会被服务端拉回</b>、<b>后台标签被节流后进度直接停滞</b>。所以它不是「一个倍速补丁」，而是围绕这个站点的播放语义重写的一套推进逻辑。</p>
+    </div>
+    <div class="pain">
+      <div class="card">
+        <h3>人必须坐在屏幕前</h3>
+        <p>页面失去可见性后定时器被节流，播放一停，整门课的进度就悬在那里；切去别的窗口再回来，往往已经停了两三分钟。</p>
+      </div>
+      <div class="card">
+        <h3>停了要手动拉起</h3>
+        <p>站点自己的防挂机提示、跨讲切换、偶发断流都会让视频停在原地。每停一次得点一次，6 讲下来就是十几次打断。</p>
+      </div>
+      <div class="card">
+        <h3>进度不可信</h3>
+        <p>看完一讲是否真的计了学时，刷新前后并不一致；等发现没计上，往往已经过去几十分钟。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="how">
+    <div class="sec-h">
+      <div class="sec-n">02</div>
+      <div class="sec-t"><h2>已实测的稳定使用办法</h2><span class="en">Stable Path</span></div>
+      <p class="sec-note">以下六步是在真机 Edge 上反复跑通的口径，照做即可复现「6 讲 30 分钟、零人工介入」。跳过任何一步都可能变成不稳定。</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div>
+          <h3>用 Edge + ScriptCat，且只保留一份</h3>
+          <p>脚本按 Edge 的播放器行为调过参数，其他内核不保证。ScriptCat 里只留一份本脚本；同一页面被注入两次会出现双面板，两个实例抢同一个视频句柄。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>从站点首页进课程列表，不要直连列表地址</h3>
+          <p>列表页直连会被服务端重定向回首页，脚本拿不到课程上下文。正确路径是登录后点左侧「首页」，再从课程入口进列表。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>进入视频页，确认右下角面板显示 LIVE</h3>
+          <p>状态行出现 <span class="k">[LIVE] 1x · 计时</span> 才是真正接管了播放器；只看到一条折叠条说明面板被收起，点一下标题栏展开即可。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>把这个标签留在前台，浏览器不要最小化</h3>
+          <p>这是唯一不能省的一步。浏览器对后台标签有硬性定时器节流，脚本靠可见性心跳做了兜底，但断流自愈仍需页面处于可见状态才最可靠。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>每 10 分钟扫一眼进度与日志</h3>
+          <p>看三样：LIVE 后面的计时有没有在走、进度条有没有推进、日志最后一条的时间戳是不是刚刚。三样都在跳，说明它在正常干活；否则照下一步处理。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>换课、换讲都用站点内跳转，别整页刷新</h3>
+          <p>整页刷新会重建整个播放器，脚本需要重新走一遍「嗅章节 → 拆视频 → 接管」流程，期间那几十秒是不计入学时的。用站点自带的课程列表切换最稳。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="core">
+    <div class="sec-h">
+      <div class="sec-n">03</div>
+      <div class="sec-t"><h2>让它稳定的那八件事</h2><span class="en">Kernel</span></div>
+      <p class="sec-note">v0.6.0 起把「能跑」改成「跑一整门课不出事」。这一版的改动几乎全在容错方向，界面上看不见，但直接决定了它能不能无人值守。</p>
+    </div>
+    <div class="mx">
+      <div class="mx-it"><div class="lb">01</div><div>
+        <h4>单实例守卫</h4>
+        <p>同页二次注入直接短路，只允许一个面板、一个调度器存在，避免两个实例互相抢播放器。</p>
+      </div></div>
+      <div class="mx-it"><div class="lb">02</div><div>
+        <h4>定时器全部托管</h4>
+        <p>所有轮询都过一层 guard：单次异常不会让整个循环死掉，失败的那一轮只跳过、不累积成雪崩。</p>
+      </div></div>
+      <div class="mx-it"><div class="lb">03</div><div>
+        <h4>断流三重闸门</h4>
+        <p>播放 → 媒体事件 → 句柄重绑，逐级兜底；拉起前先确认真的没在播，避免把正常播放反复打断。</p>
+      </div></div>
+      <div class="mx-it"><div class="lb">04</div><div>
+        <h4>play 失败计数</h4>
+        <p>被浏览器拒绝的自动播放单独计数，连续失败才升级处理，不会疯狂重试把页面拖卡。</p>
+      </div></div>
+      <div class="mx-it"><div class="lb">05</div><div>
+        <h4>后台标签不误判</h4>
+        <p>页面不可见时切换判定口径，不把「被节流」当成「已停止」，避免最小化瞬间误触发一整串重启。</p>
+      </div></div>
+      <div class="mx-it"><div class="lb">06</div><div>
+        <h4>单页路由重置</h4>
+        <p>站点是单页应用，跨讲不刷新页面。脚本监听路由变化，重算当前讲次并重新绑定视频句柄。</p>
+      </div></div>
+      <div class="mx-it"><div class="lb">07</div><div>
+        <h4>同类弹窗 12 次停手</h4>
+        <p>「上次观看到」这类弹窗会自动点确认，但同类提示出现 12 次后停手，防止死循环里空转。</p>
+      </div></div>
+      <div class="mx-it"><div class="lb">08</div><div>
+        <h4>存储与倍速容错</h4>
+        <p>读写本地配置失败一律回默认值不外抛；倍速每 2 秒校准回 1x，防止站点侧改速导致学时判定异常。</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="todo">
+    <div class="sec-h">
+      <div class="sec-n">04</div>
+      <div class="sec-t"><h2>待改进 / 已知做不到</h2><span class="en">Known Limits</span></div>
+      <p class="sec-note">下面每一条都是实测撞出来的，不粉饰。写在这里是为了让你别白试，也方便有人接着改。</p>
+    </div>
+    <div class="list">
+      <div class="li">
+        <div class="lv ph">P1 待改</div>
+        <div>
+          <h4>后台标签仍会拖慢进度</h4>
+          <p>心跳只能阻止整体冻结，不能绕开浏览器对定时器的节流。切到别的标签后进度会变慢，这是浏览器层面的限制，不打算用重活去硬扛。</p>
+        </div>
+      </div>
+      <div class="li">
+        <div class="lv ph">P1 待改</div>
+        <div>
+          <h4>倍速被锁在 1x</h4>
+          <p>站点侧对播放速率有校验，2x 会被拉回并可能影响学时判定。所以脚本固定 1x，宁可慢也不让学时白跑。</p>
+        </div>
+      </div>
+      <div class="li">
+        <div class="lv ok">已验证</div>
+        <div>
+          <h4>拖进度、跳片尾都做不通</h4>
+          <p>服务端会校验播放时长并回拉进度，硬跳只会让当前讲次卡在异常态。这条不再尝试，属于平台侧限制。</p>
+        </div>
+      </div>
+      <div class="li">
+        <div class="lv ph">P2 待改</div>
+        <div>
+          <h4>多标签同时跑同一门课</h4>
+          <p>两个标签各跑一遍不会更快，反而互相覆盖进度。目前建议一次只跑一门课、一个标签。</p>
+        </div>
+      </div>
+      <div class="li">
+        <div class="lv">未覆盖</div>
+        <div>
+          <h4>答题与考试</h4>
+          <p>脚本只做视频推进，不做题目与考试。预留了接口位，但没有实现，也不打算默认打开。</p>
+        </div>
+      </div>
+      <div class="li">
+        <div class="lv">未覆盖</div>
+        <div>
+          <h4>站点改版即失效</h4>
+          <p>选择器是按当前页面结构写的。平台换前端框架后大概率需要重新对齐，届时以实际页面为准改，不做自动适配。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="report">
+    <div class="sec-h">
+      <div class="sec-n">05</div>
+      <div class="sec-t"><h2>需要你反馈的问题</h2><span class="en">Feedback</span></div>
+      <p class="sec-note">这个脚本是在一台机器、一个账号、一种课型上跑出来的。换环境必然有我没见过的情况，下面几类最值得报。</p>
+    </div>
+    <div class="report">
+      <div class="card grp">
+        <div class="qid">
+          <b>1128950753</b>
+          <button class="copy" id="copyQ" type="button">复制群号</button>
+        </div>
+        <p>与 DS-Whalegirl 正常版共用同一个交流群。进群后直接贴问题，不用先问「在吗」。</p>
+        <div class="tags">
+          <span>脚本版本号</span><span>浏览器版本</span><span>控制台报错</span><span>复现步骤</span>
+        </div>
+      </div>
+      <div class="req">
+        <b>优先想知道这四类：</b>
+        <ol>
+          <li>课程页结构和你这边不一样 —— 面板不出现、LIVE 不亮、日志空转。</li>
+          <li>进度推进了但学时没涨 —— 附上课程 ID、讲次与刷新前后的学时数字。</li>
+          <li>跑到一半停住、日志停在某个固定句子 —— 把那句原文抄给我。</li>
+          <li>换讲时跳到错误的章节 —— 说明你点了哪里、期望是哪一讲。</li>
+        </ol>
+        <p style="margin-top:12px">报问题请附上面四件套里的至少两件，能省掉一轮来回。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="notice">
+    <div class="sec-h">
+      <div class="sec-n">06</div>
+      <div class="sec-t"><h2>使用须知</h2><span class="en">Terms</span></div>
+      <p class="sec-note">安装并使用即视为同意以下六条。它们不是形式条款，是这个工具的真实边界。</p>
+    </div>
+    <ul class="terms">
+      <li><span class="n">01</span><div><b>学习与研究用途</b> —— 仅供个人学习与研究，请遵守学校教学管理规定、学术诚信要求与平台服务条款，勿用于代写、替考等违规用途。</div></li>
+      <li><span class="n">02</span><div><b>账号安全</b> —— 脚本不收集、不上传、不保存你的账号密码，登录态只存在本机浏览器里。</div></li>
+      <li><span class="n">03</span><div><b>数据与隐私</b> —— 全部逻辑在本地运行，不上传学习记录、浏览历史或设备信息；本地仅保存开关与刷新计数两个键。</div></li>
+      <li><span class="n">04</span><div><b>费用</b> —— 脚本本身完全免费，不调用任何付费接口；打赏纯属自愿。</div></li>
+      <li><span class="n">05</span><div><b>风险自担</b> —— 使用脚本可能与平台规则产生冲突，由此产生的一切后果由使用者自行承担。</div></li>
+      <li><span class="n">06</span><div><b>开发者权利</b> —— 本脚本为个人自用辅助工具，<b>非学校官方工具</b>，最终解释权归开发者所有。</div></li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="f-top">
+      <div class="f-l">
+        <b>DS-Whalegirl·虹</b>
+        中国矿业大学（北京）数字党校培训平台 · 视频自动推进<br>
+        版本 v0.6.2 · 采用 MIT 协议 · 仅供个人学习与研究使用
+        <div class="f-links">
+          <a href="https://github.com/Dream-Architect1026/ds-whalegirl-hong" target="_blank" rel="noopener">GitHub 仓库</a>
+          <a href="https://github.com/Dream-Architect1026/ds-whalegirl-hong/issues" target="_blank" rel="noopener">问题反馈</a>
+          <a href="https://github.com/Dream-Architect1026/DS-Whalegirl" target="_blank" rel="noopener">DS-Whalegirl 正常版</a>
+          <a href="#how">稳定用法</a>
+        </div>
+      </div>
+      <div class="f-l" style="text-align:right">
+        <b>&nbsp;</b>
+        交流群 1128950753<br>
+        适配站点 zhdj.cumtb.edu.cn<br>
+        Edge + ScriptCat 实测
+      </div>
+    </div>
+    <div class="sign">
+      <p>Developed by <b>X.H</b></p>
+      <p>DS-Whalegirl·虹 v0.6.2 · MIT License</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var q = '1128950753';
+  var el = document.getElementById('copyQ');
+  if (!el) return;
+  var t = null;
+  el.addEventListener('click', function () {
+    var done = function () {
+      el.textContent = '已复制';
+      clearTimeout(t);
+      t = setTimeout(function () { el.textContent = '复制群号'; }, 1600);
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(q).then(done, function () { done(); });
+        return;
+      }
+    } catch (e) {}
+    var ta = document.createElement('textarea');
+    ta.value = q;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    done();
+  });
+})();
+</script>
+
+</body>
+</html>
