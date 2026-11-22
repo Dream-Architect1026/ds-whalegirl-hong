@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DS-Whalegirl·虹 — 伴学小鲸 · 数字党校伴学脚本</title>
+<title>DS-Whalegirl·虹 — 数字党校伴学脚本</title>
 <meta name="description" content="DS-Whalegirl·虹（伴学小鲸）：中国矿业大学（北京）数字党校培训平台的伴学脚本。固定 1x、弹窗自理、断流自愈、跨讲整页接管。实测 6 讲 30 分钟无人值守跑完，学时 7.7 → 8.4。">
-<meta property="og:title" content="DS-Whalegirl·虹 — 伴学小鲸">
+<meta property="og:title" content="DS-Whalegirl·虹 — 数字党校伴学脚本">
 <meta property="og:description" content="固定 1x、弹窗自理、断流自愈、跨讲接管。实测 6 讲 30 分钟无人值守跑完。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://dream-architect1026.github.io/ds-whalegirl-hong/">
@@ -22,9 +22,9 @@
   --rim:rgba(255,255,255,.30);--rim-dim:rgba(255,255,255,.14);
   --edge:rgba(255,150,140,.22);
   --tint:linear-gradient(155deg,rgba(255,255,255,.10),rgba(255,255,255,.028) 40%,rgba(28,6,10,.30));
-  --tint-hi:linear-gradient(155deg,rgba(255,255,255,.20),rgba(255,255,255,.07) 34%,rgba(34,6,10,.36) 100%);
+  --tint-hi:linear-gradient(155deg,rgba(255,255,255,.20),rgba(255,255,255,.07) 34%,rgba(34,6,10,.34) 100%);
   --sh:0 8px 22px rgba(8,2,4,.36),inset 0 1px 0 var(--rim-dim);
-  --sh-hi:0 12px 28px rgba(8,2,4,.48),0 0 20px rgba(255,90,90,.18),inset 0 1px 0 var(--rim);
+  --sh-hi:0 12px 28px rgba(8,2,4,.42),0 0 20px rgba(255,90,90,.16),inset 0 1px 0 var(--rim);
   --t:background .28s ease,border-color .28s ease,box-shadow .28s ease,transform .28s cubic-bezier(.34,1.2,.64,1),color .2s ease;
   --max:1180px;
   --serif:"Songti SC","Noto Serif SC","Source Han Serif SC",STSong,serif;
@@ -69,16 +69,16 @@ body::before{content:"";position:fixed;inset:-8%;z-index:0;pointer-events:none;
 
 /* ---------- 首屏：左实右虚 ---------- */
 .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--r1)}
-.hero-art{position:absolute;top:0;right:0;width:54%;height:100%;z-index:0;pointer-events:none;
-  background-image:url("./assets/bg-1600.jpg");background-size:cover;background-position:50% 100%;opacity:.42;
-  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 22%,#000 82%,transparent 100%);
-  mask-image:linear-gradient(90deg,transparent 0,#000 22%,#000 82%,transparent 100%)}
+.hero-art{position:absolute;top:0;right:0;width:47%;height:100%;z-index:0;pointer-events:none;
+  background-image:url("./assets/bg-1600.jpg");background-size:cover;background-position:50% 100%;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,rgba(0,0,0,.35) 16%,#000 52%,#000 100%);
+  mask-image:linear-gradient(90deg,transparent 0,rgba(0,0,0,.35) 16%,#000 52%,#000 100%)}
 .hero-art::after{content:"";position:absolute;inset:0;
-  background:linear-gradient(90deg,rgba(11,5,7,.94) 0,rgba(11,5,7,.34) 34%,rgba(11,5,7,0) 62%),
-             linear-gradient(180deg,rgba(11,5,7,.30),transparent 26%,transparent 52%,rgba(11,5,7,.92) 100%)}
+  background:linear-gradient(180deg,rgba(11,5,7,.34) 0,rgba(11,5,7,0) 26%,rgba(11,5,7,0) 58%,rgba(11,5,7,.92) 100%),
+             radial-gradient(70% 80% at 30% 50%,rgba(11,5,7,.55),transparent 72%)}
 .wrap{max-width:var(--max);margin:0 auto;padding:0 28px;position:relative;z-index:1}
 .hero-in{display:grid;grid-template-columns:minmax(0,1.04fr) minmax(0,.96fr);gap:44px;align-items:center;
-  padding:66px 0 52px}
+  padding:66px 28px 52px}
 .eyebrow{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:13px;
   letter-spacing:.14em;text-transform:uppercase;color:var(--dim2)}
 .eyebrow::before{content:"";width:22px;height:1px;background:var(--r3);flex:0 0 auto}
@@ -115,17 +115,13 @@ h1 small{display:block;font-family:var(--sans);font-size:clamp(12.5px,1.4vw,14px
 .fig .k{font-size:13px;line-height:1.6;color:var(--dim2);margin-top:4px}
 
 /* 右侧立绘卡 */
-.hero-vis{position:relative;z-index:1}
-.vis{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--edge);
-  background:var(--tint);box-shadow:var(--sh-hi);height:min(62vh,520px);min-height:400px}
-.vis img{width:100%;height:100%;object-fit:cover;object-position:50% 32%}
-.vis::after{content:"";position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(180deg,rgba(11,5,7,.30),transparent 30%,transparent 62%,rgba(11,5,7,.86) 100%),
-             linear-gradient(90deg,rgba(11,5,7,.55),transparent 34%)}
-.vis-meta{position:absolute;left:16px;bottom:14px;z-index:2;display:flex;align-items:center;gap:8px;
-  font-family:var(--mono);font-size:13px;color:#FFD9D2;letter-spacing:.06em}
+.hero-vis{position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:flex-end;min-height:min(64vh,540px)}
+.vis-cap{position:relative;z-index:2;font-family:var(--mono);font-size:13px;color:#FFD9D2;letter-spacing:.06em;text-align:right;padding-bottom:4px;text-shadow:0 1px 12px rgba(0,0,0,.7)}
+
+
+
 .vis-meta b{color:#fff;font-weight:700}
-.cap{margin-top:10px;font-family:var(--mono);font-size:13px;color:var(--dim2);letter-spacing:.02em}
+
 
 /* ---------- 章节骨架 ---------- */
 .sec{position:relative;padding:56px 0;border-bottom:1px solid var(--r1)}
@@ -205,12 +201,12 @@ h1 small{display:block;font-family:var(--sans);font-size:clamp(12.5px,1.4vw,14px
 
 /* ---------- 断点：先保 PC，再降移动 ---------- */
 @media (max-width:1100px){
-  .hero-in{gap:34px;padding:60px 0 50px}
+  .hero-in{gap:34px;padding:60px 28px 50px}
   .grid4{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:900px){
   .hero-art{width:100%;opacity:.55}
-  .hero-in{grid-template-columns:1fr;gap:26px;padding:54px 0 44px}
+  .hero-in{grid-template-columns:1fr;gap:26px;padding:54px 28px 44px}
   .hero-vis{order:2}
   .vis{height:52vh;min-height:320px}
   .lede{max-width:52ch}
@@ -229,14 +225,15 @@ h1 small{display:block;font-family:var(--sans);font-size:clamp(12.5px,1.4vw,14px
   .top-in{padding:0 18px;gap:9px;height:56px}
   .nav{gap:0;font-size:13px}
   .nav a{padding:6px 7px}
-  .nav a:nth-child(n+4){display:none}
+  .nav a:nth-child(n+5){display:none}
   .wrap{padding:0 18px}
   .brand{font-size:13.5px}
   .pill{display:none}
   .steps,.grid4{grid-template-columns:1fr}
   h1{font-size:34px}
   .hero-vis{display:none}
-  .hero-in{padding:44px 0 36px}
+  .hero-art{width:100%;opacity:.30}
+  .hero-in{padding:44px 18px 36px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -258,7 +255,7 @@ h1 small{display:block;font-family:var(--sans);font-size:clamp(12.5px,1.4vw,14px
   <div class="wrap hero-in">
     <div class="hero-txt">
       <div class="eyebrow">中国矿业大学（北京）· 数字党校培训平台</div>
-      <h1>DS-Whalegirl·虹<small>伴 学 小 鲸</small></h1>
+      <h1>DS-Whalegirl·虹<small>ZHDJ · 视 频 伴 学</small></h1>
       <p class="lede">装上就开跑：<b>固定 1x</b>、弹窗自理、断流自愈、<b>跨讲整页接管</b>。实测《马克思主义为什么行》6 讲 30 分钟无人值守跑完，学时 7.7 → 8.4。</p>
       <div class="notice">
         <span class="tag">v0.6.4</span>
@@ -275,12 +272,8 @@ h1 small{display:block;font-family:var(--sans);font-size:clamp(12.5px,1.4vw,14px
         <div class="fig"><div class="v">0<i>次</i></div><div class="k">手动点击<br>全流程</div></div>
       </div>
     </div>
-    <div class="hero-vis">
-      <div class="vis">
-        <img src="./assets/bg-1600.jpg" alt="虹 · 液态红晶立绘">
-        <div class="vis-meta"><b>虹</b> / LIQUID GLASS · RED</div>
-      </div>
-      <div class="cap">立绘取景按整幅保留，头部不裁切；面板配色取自同一族红。</div>
+    <div class="hero-vis" aria-hidden="true">
+      <div class="vis-cap"><b>虹</b> / LIQUID GLASS · RED · 立绘整幅保留，头部不裁</div>
     </div>
   </div>
 </section>
@@ -332,27 +325,27 @@ h1 small{display:block;font-family:var(--sans);font-size:clamp(12.5px,1.4vw,14px
     <header class="sec-h">
       <span class="no">03</span>
       <h2>面板长这样</h2>
-      <span class="k">Panel · real screenshots</span>
+      <span class="k">Panel · screenshots</span>
       <p class="lead">液态玻璃按正版配方取值：内描边 <code>--rim</code>、斜向亮面 <code>--tint-hi</code>、双层投影 <code>--shadow-hi</code>，红族映射。</p>
     </header>
     <div class="shots">
       <figure class="shot">
         <img src="./assets/shot-status.webp" alt="状态页：LIVE、进度条与运行日志">
-        <figcaption><b>状态页</b> · v0.6.4 渲染 / LIVE · 1x · 计时 + 进度条 + 日志占满；滚动条已移除。</figcaption>
+        <figcaption><b>状态页</b> · 渲染 · v0.6.4 · 1360×940 / LIVE · 1x · 计时 + 进度条 + 日志占满；滚动条已移除。</figcaption>
       </figure>
       <figure class="shot">
         <img src="./assets/shot-guide.webp" alt="引导页：编号说明卡">
-        <figcaption><b>引导页</b> · 编号卡式说明；玻璃块悬停上浮 2px。</figcaption>
+        <figcaption><b>引导页</b> · 编号卡式说明；玻璃块悬停上浮 1px。渲染 · v0.6.4 · 1360×940（滚动区首屏）</figcaption>
       </figure>
     </div>
     <div class="shots" style="margin-top:24px">
       <figure class="shot">
         <img src="./assets/shot-cfg.webp" alt="配置页：只读配置项">
-        <figcaption><b>配置页</b> · 只读，看运行口径（倍速、阈值、学时）。</figcaption>
+        <figcaption><b>配置页</b> · 只读，看运行口径（倍速、弹窗计数、自动切换）。渲染 · v0.6.4 · 1360×940</figcaption>
       </figure>
       <figure class="shot">
         <img src="./assets/shot-whale.webp" alt="小鲸页：鲸娘与预留问答位">
-        <figcaption><b>小鲸页</b> · 鲸娘气泡；答题位预留，不代答。</figcaption>
+        <figcaption><b>小鲸页</b> · 鲸娘气泡；答题位预留，不代答。渲染 · v0.6.4 · 1360×940</figcaption>
       </figure>
     </div>
     <div class="realwrap">
@@ -418,7 +411,7 @@ h1 small{display:block;font-family:var(--sans);font-size:clamp(12.5px,1.4vw,14px
       <p>DS-Whalegirl·虹 v0.6.4 · MIT License</p>
     </div>
     <div class="foot">
-      <span>DS-Whalegirl·虹 · 伴学小鲸 · 非官方工具，按现状提供</span>
+      <span>DS-Whalegirl·虹 · 非官方工具，按现状提供</span>
       <span><a href="https://github.com/Dream-Architect1026/ds-whalegirl-hong">GitHub</a> · <a href="https://dream-architect1026.github.io/DS-Whalegirl/">正版 DS-Whalegirl</a></span>
     </div>
   </div>
