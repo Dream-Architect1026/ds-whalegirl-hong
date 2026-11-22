@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         DS-Whalegirl·虹 — ZHDJ 视频增强
+// @name         伴学小鲸 — ZHDJ 视频增强
 // @namespace    zhdj.cumtb.shuavideo
-// @version      0.6.2
-// @description  中国矿业大学（北京）数字党校培训平台·视频页增强：弹窗自动确认、保持播放、1x 倍速、自动下一讲。UI 沿用 DS-Whalegirl 液态玻璃体系（红色版）。不含答题/测试/提交。
+// @version      0.6.3
+// @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的视频页增强——弹窗自动确认、断流自动拉起、固定 1x、自动下一讲。液态玻璃面板（红色主题）。不含答题/测试/提交。
 // @author       X.H
 // @match        https://zhdj.cumtb.edu.cn/*
 // @match        https://zhdj.cumtb.edu.cn/training-m/*
@@ -615,7 +615,7 @@
     return false;
   }
 
-  /* ---------------- 悬浮控件（DS-Whalegirl 液态玻璃 · 红） ---------------- */
+  /* ---------------- 悬浮控件（伴学小鲸 · 液态玻璃红） ---------------- */
 
   var panel, badge, statTxt, fill, bodyEl;
   var tabStatus, tabWhale, tabCfg, tabGuide, tabTip;
@@ -1238,11 +1238,11 @@
     var s = document.createElement('style');
     s.id = 'zhdj-sv-style';
     s.textContent = [
-      /* ===== 设计令牌：DS-Whalegirl 体系 · 红色主题 ===== */
+      /* ===== 设计令牌：伴学小鲸 · 液态玻璃体系 · 红色主题 ===== */
       '#zhdj-sv{--zr-a:#FF5A5A;--zr-b:#C8102E;--zr-c:#FF8A5C;',
       '--zr-ink:#FFF0EE;--zr-dim:#E3ADA6;--zr-line:rgba(255,120,110,.20);',
       '--zr-glass:rgba(38,10,14,.55);--zr-glass2:rgba(56,14,20,.42);',
-      /* 液态玻璃原值（对齐 DS-Whalegirl 的 --lg-*）：描边高光 / 斜向亮面 / 层叠阴影 */
+      /* 液态玻璃原值（--lg-* 同源取值）：描边高光 / 斜向亮面 / 层叠阴影 */
       '--zr-rim:rgba(255,232,226,.26);--zr-rim-dim:rgba(255,232,226,.10);',
       '--zr-tint:linear-gradient(155deg,rgba(255,255,255,.17) 0%,rgba(255,255,255,.055) 34%,rgba(255,120,110,.05) 62%,rgba(34,6,10,.34) 100%);',
       '--zr-spec:linear-gradient(120deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 38%);',
@@ -1510,10 +1510,10 @@
     var head = mk('div', 'sv-head');
     var title = mk('div', 'sv-title');
     title.appendChild(emblem.cloneNode(true));
-    var nameSpan = mk('span'); nameSpan.textContent = 'DS-Whalegirl·虹';
+    var nameSpan = mk('span'); nameSpan.textContent = '伴学小鲸';
     title.appendChild(nameSpan);
     var headR = mk('div', 'sv-head-r');
-    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.2';
+    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.3';
     var zoomBtn = mk('button', 'sv-icon'); zoomBtn.textContent = '⤢'; zoomBtn.title = '展开 / 收起';
     var minBtn = mk('button', 'sv-icon'); minBtn.textContent = '—'; minBtn.title = '最小化';
     headR.appendChild(ver); headR.appendChild(minBtn); headR.appendChild(zoomBtn);   // 减在左、全屏在右
@@ -1626,7 +1626,7 @@
     // 版本声明：本机出品规范样式（圆角卡片 + 两行居中）
     var foot = mk('div', 'sv-foot');
     var fs = mk('p', 'sv-sign'); fs.innerHTML = 'Developed by <b>X.H</b>';
-    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.2 · MIT License';
+    var fm = mk('p', 'sv-meta'); fm.textContent = '伴学小鲸 v0.6.3 · MIT License';
     foot.appendChild(fs); foot.appendChild(fm);
     paneTip.appendChild(foot);
 
@@ -1747,7 +1747,7 @@
     if (document.getElementById('zhdj-sv-mini')) return;
     var b = document.createElement('div');
     b.id = 'zhdj-sv-mini';
-    b.textContent = 'DS-Whalegirl·虹 v0.6.2';
+    b.textContent = '伴学小鲸 v0.6.3';
     b.style.cssText = 'position:fixed;right:14px;bottom:74px;z-index:2147483000;background:rgba(60,10,14,.88);color:#fff0ee;font:12px/1.4 system-ui,sans-serif;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,120,110,.4)';
     (document.body || document.documentElement).appendChild(b);
   }
