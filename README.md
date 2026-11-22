@@ -1,4 +1,4 @@
-# DS-Whalegirl·虹
+# 伴学小鲸
 
 中国矿业大学（北京）数字党校培训平台（`zhdj.cumtb.edu.cn`）的视频自动推进脚本，ScriptCat / Tampermonkey 油猴脚本形态。UI 沿用 DS-Whalegirl 的液态玻璃体系，配色改为红色。
 
@@ -47,3 +47,4 @@ zhdj-shuavideo.user.js     脚本本体（Pages 同时作为自动更新源）
 ## 许可
 
 MIT License
+
