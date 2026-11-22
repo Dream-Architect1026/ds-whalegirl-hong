@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         DS-Whalegirl·虹 — 伴学小鲸（ZHDJ 视频增强）
+// @name         DS-Whalegirl·虹（ZHDJ 视频增强）
 // @namespace    zhdj.cumtb.shuavideo
 // @version      0.6.4
 // @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的伴学脚本——弹窗自动确认、断流自动拉起、固定 1x、跨讲自动续播（整页重新接管）。液态玻璃面板（红色主题）。不含答题/测试/提交。
@@ -675,7 +675,7 @@
     return false;
   }
 
-  /* ---------------- 悬浮控件（伴学小鲸 · 液态玻璃红） ---------------- */
+  /* ---------------- 悬浮控件（DS-Whalegirl·虹 · 液态玻璃） ---------------- */
 
   var panel, badge, statTxt, fill, bodyEl;
   var tabStatus, tabWhale, tabCfg, tabGuide, tabTip;
@@ -1298,7 +1298,7 @@
     var s = document.createElement('style');
     s.id = 'zhdj-sv-style';
     s.textContent = [
-      /* ===== 设计令牌：伴学小鲸 · 液态玻璃体系 · 红色主题 ===== */
+      /* ===== 设计令牌：DS-Whalegirl·虹 · 液态玻璃体系 ===== */
       '#zhdj-sv{--zr-a:#FF5A5A;--zr-b:#C8102E;--zr-c:#FF8A5C;',
       '--zr-ink:#FFF0EE;--zr-dim:#E3ADA6;--zr-line:rgba(255,120,110,.20);',
       '--zr-glass:rgba(38,10,14,.55);--zr-glass2:rgba(56,14,20,.42);',
@@ -1306,11 +1306,11 @@
       '--zr-rim:rgba(255,255,255,.30);--zr-rim-dim:rgba(255,255,255,.14);',
       '--zr-edge:rgba(255,150,140,.22);',
       '--zr-tint:linear-gradient(155deg,rgba(255,255,255,.10),rgba(255,255,255,.028) 40%,rgba(28,6,10,.30));',
-      '--zr-tint-hi:linear-gradient(155deg,rgba(255,255,255,.20),rgba(255,255,255,.07) 34%,rgba(34,6,10,.36) 100%);',
+      '--zr-tint-hi:linear-gradient(155deg,rgba(255,255,255,.20),rgba(255,255,255,.07) 34%,rgba(34,6,10,.34) 100%);',
       '--zr-tint-flat:linear-gradient(160deg,rgba(255,255,255,.075),rgba(255,255,255,.018) 58%,rgba(24,5,9,.20));',
-      '--zr-spec:linear-gradient(120deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 36%);',
+      '--zr-spec:linear-gradient(160deg,rgba(255,255,255,.13) 0%,rgba(255,255,255,.02) 42%,rgba(255,255,255,0) 70%);',
       '--zr-shadow:0 8px 22px rgba(10,2,4,.34),inset 0 1px 0 var(--zr-rim-dim);',
-      '--zr-shadow-hi:0 12px 28px rgba(10,2,4,.46),0 0 20px rgba(255,90,90,.18),inset 0 1px 0 var(--zr-rim);',
+      '--zr-shadow-hi:0 12px 28px rgba(10,2,4,.42),0 0 20px rgba(255,90,90,.16),inset 0 1px 0 var(--zr-rim);',
       '--zr-t:background .28s ease,border-color .28s ease,box-shadow .28s ease,transform .28s cubic-bezier(.34,1.2,.64,1),backdrop-filter .28s ease,-webkit-backdrop-filter .28s ease,color .2s ease;',
       'color-scheme:dark;',
       '--zr-font:"HarmonyOS Sans SC","MiSans","PingFang SC","Microsoft YaHei",system-ui,sans-serif;',
@@ -1725,6 +1725,16 @@
   function bootPanel() {
     if (booted) return;
     booted = true;
+
+    // 跨讲标记：新文档里读一次就清，既留痕也不留死标记
+    try {
+      var nvRaw = sessionStorage.getItem(NAV_KEY);
+      if (nvRaw) {
+        var nv = JSON.parse(nvRaw);
+        if (nv && nv.t && Date.now() - nv.t < 30000) log('接续跳讲 · ' + String(nv.u || '').replace(/^https?:\/\/[^/]+/, ''));
+        sessionStorage.removeItem(NAV_KEY);
+      }
+    } catch (e) {}
 
     document.addEventListener('pointerdown', function () { lastPointerDown = Date.now(); }, true);
 
