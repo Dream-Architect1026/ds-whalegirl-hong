@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         伴学小鲸 — ZHDJ 视频增强
+// @name         DS-Whalegirl·虹 — 伴学小鲸（ZHDJ 视频增强）
 // @namespace    zhdj.cumtb.shuavideo
-// @version      0.6.3
-// @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的视频页增强——弹窗自动确认、断流自动拉起、固定 1x、自动下一讲。液态玻璃面板（红色主题）。不含答题/测试/提交。
+// @version      0.6.4
+// @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的伴学脚本——弹窗自动确认、断流自动拉起、固定 1x、跨讲自动续播（整页重新接管）。液态玻璃面板（红色主题）。不含答题/测试/提交。
 // @author       X.H
 // @match        https://zhdj.cumtb.edu.cn/*
 // @match        https://zhdj.cumtb.edu.cn/training-m/*
@@ -481,9 +481,69 @@
     var nxtTxt = (target.innerText || '').replace(/\s+/g, '');
     if (curTxt === nxtTxt) { courseFinished(); return false; }
     var clickable = target.querySelector('a,button') || target;
+    var href = navUrlOf(target);
+    if (href) { goLecture(href); return true; }
     realClick(clickable);
     log('切换下一讲');
+    navGuard();
     return true;
+  }
+
+  /* ---------------- 跨讲再接管（P0 · v0.6.4） ----------------
+     站点换讲不刷新文档：React 重绘会把面板节点连根拔掉，旧实例留在上一个
+     页面里。这里三条防线：
+     ① 能拿到下一讲 URL 就直接整页导航，让脚本在 document-idle 重新注入；
+     ② 只能点按钮时，点完盯着「URL 变了但面板没了」，命中就整页刷新一次；
+     ③ 常驻 revive 巡检，面板失踪就地补挂，连续失败再整页刷新（每讲限一次）。 */
+  var NAV_KEY = 'zhdj_sv_nav_v1', FRESH_KEY = 'zhdj_sv_fresh_v1', reviveFail = 0;
+
+  function navUrlOf(row) {
+    try {
+      var a = row.closest ? row.closest('a[href]') : null;
+      if (a && /videoDetail|video-detail/i.test(a.getAttribute('href') || '')) return a.href;
+      var list = row.querySelectorAll ? row.querySelectorAll('a[href]') : [];
+      for (var i = 0; i < list.length; i++) {
+        if (/videoDetail|video-detail/i.test(list[i].getAttribute('href') || '')) return list[i].href;
+      }
+    } catch (e) {}
+    return '';
+  }
+
+  function goLecture(url) {
+    try { sessionStorage.setItem(NAV_KEY, JSON.stringify({ u: url, t: Date.now() })); } catch (e) {}
+    log('跳转下一讲（整页加载）');
+    try { location.assign(url); } catch (e) { try { location.href = url; } catch (e2) {} }
+  }
+
+  function navGuard() {
+    var from = location.href, n = 0;
+    var iv = window.setInterval(function () {
+      n++;
+      var hasPanel = !!(document.getElementById('zhdj-sv') || document.getElementById('zhdj-sv-mini'));
+      if (location.href !== from && !hasPanel) { window.clearInterval(iv); forceFresh('换讲后未接管'); return; }
+      if (n > 14) window.clearInterval(iv);
+    }, 700);
+  }
+
+  function forceFresh(reason) {
+    var key = FRESH_KEY + '|' + location.pathname;
+    try {
+      if (sessionStorage.getItem(key)) return;      // 同一讲只强制刷新一次，绝不进死循环
+      sessionStorage.setItem(key, String(Date.now()));
+    } catch (e) {}
+    log('整页刷新接管：' + reason);
+    try { location.reload(); } catch (e) {}
+  }
+
+  function revive() {
+    if (!isVideoPage()) return;
+    if (document.getElementById('zhdj-sv') || document.getElementById('zhdj-sv-mini')) { reviveFail = 0; return; }
+    reviveFail++;
+    try { buildUI(); } catch (e) {}
+    if (!document.getElementById('zhdj-sv') && !document.getElementById('zhdj-sv-mini') && reviveFail >= 3) {
+      reviveFail = 0;
+      forceFresh('面板连续未挂载');
+    }
   }
 
   /* ---------------- 本课结束 → 自动找下一门课 ---------------- */
@@ -1242,13 +1302,16 @@
       '#zhdj-sv{--zr-a:#FF5A5A;--zr-b:#C8102E;--zr-c:#FF8A5C;',
       '--zr-ink:#FFF0EE;--zr-dim:#E3ADA6;--zr-line:rgba(255,120,110,.20);',
       '--zr-glass:rgba(38,10,14,.55);--zr-glass2:rgba(56,14,20,.42);',
-      /* 液态玻璃原值（--lg-* 同源取值）：描边高光 / 斜向亮面 / 层叠阴影 */
-      '--zr-rim:rgba(255,232,226,.26);--zr-rim-dim:rgba(255,232,226,.10);',
-      '--zr-tint:linear-gradient(155deg,rgba(255,255,255,.17) 0%,rgba(255,255,255,.055) 34%,rgba(255,120,110,.05) 62%,rgba(34,6,10,.34) 100%);',
-      '--zr-spec:linear-gradient(120deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,0) 38%);',
-      '--zr-shadow:0 18px 48px rgba(20,2,6,.55),0 0 0 1px rgba(255,120,110,.10) inset;',
-      '--zr-shadow-hi:0 12px 28px rgba(14,2,5,.44),0 0 22px rgba(255,90,90,.14),inset 0 1px 0 var(--zr-rim),inset 0 -1px 0 var(--zr-rim-dim);',
-      '--zr-t:background .28s ease,border-color .28s ease,box-shadow .28s ease,transform .28s cubic-bezier(.34,1.2,.64,1),backdrop-filter .28s ease,color .2s ease;',
+      /* 液态玻璃：逐条移植正版 --lg-rim / --lg-rim-dim / --lg-edge / --lg-tint-hi / --lg-shadow-hi，红族取值 */
+      '--zr-rim:rgba(255,255,255,.30);--zr-rim-dim:rgba(255,255,255,.14);',
+      '--zr-edge:rgba(255,150,140,.22);',
+      '--zr-tint:linear-gradient(155deg,rgba(255,255,255,.10),rgba(255,255,255,.028) 40%,rgba(28,6,10,.30));',
+      '--zr-tint-hi:linear-gradient(155deg,rgba(255,255,255,.20),rgba(255,255,255,.07) 34%,rgba(34,6,10,.36) 100%);',
+      '--zr-tint-flat:linear-gradient(160deg,rgba(255,255,255,.075),rgba(255,255,255,.018) 58%,rgba(24,5,9,.20));',
+      '--zr-spec:linear-gradient(120deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 36%);',
+      '--zr-shadow:0 8px 22px rgba(10,2,4,.34),inset 0 1px 0 var(--zr-rim-dim);',
+      '--zr-shadow-hi:0 12px 28px rgba(10,2,4,.46),0 0 20px rgba(255,90,90,.18),inset 0 1px 0 var(--zr-rim);',
+      '--zr-t:background .28s ease,border-color .28s ease,box-shadow .28s ease,transform .28s cubic-bezier(.34,1.2,.64,1),backdrop-filter .28s ease,-webkit-backdrop-filter .28s ease,color .2s ease;',
       'color-scheme:dark;',
       '--zr-font:"HarmonyOS Sans SC","MiSans","PingFang SC","Microsoft YaHei",system-ui,sans-serif;',
       'position:fixed;right:14px;bottom:74px;z-index:2147483000;box-sizing:border-box;',
@@ -1257,22 +1320,21 @@
       /* 折叠态：35px 最小化条 */
       '#zhdj-sv .sv-bar{display:flex;align-items:center;gap:7px;box-sizing:border-box;width:310px;height:35px;',
       'padding:0 8px 0 6px;border-radius:12px;cursor:pointer;overflow:hidden;',
-      'background:linear-gradient(120deg,rgba(255,90,90,.20) 0%,rgba(200,16,46,.12) 48%,rgba(255,138,92,.20) 100%),linear-gradient(180deg,rgba(30,4,8,.44) 0%,rgba(36,6,10,.64) 45%,rgba(24,4,8,.80) 100%),url(' + BG + ') center top/cover no-repeat,var(--zr-glass);',
-      'border:1px solid var(--zr-line);box-shadow:var(--zr-shadow);',
-      '-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);',
-      'transition:opacity .2s,box-shadow .2s,transform .2s cubic-bezier(.34,1.2,.64,1)}',
-      '#zhdj-sv .sv-bar:hover{transform:translateY(-1px);box-shadow:0 16px 40px rgba(20,2,6,.55),0 0 18px rgba(255,90,90,.28),0 0 0 1px rgba(255,120,110,.12) inset}',
+      'background:linear-gradient(120deg,rgba(255,90,90,.16) 0%,rgba(200,16,46,.09) 48%,rgba(255,138,92,.16) 100%),var(--zr-tint);',
+      'border:1px solid var(--zr-edge);box-shadow:var(--zr-shadow);',
+      '-webkit-backdrop-filter:blur(14px) saturate(155%);backdrop-filter:blur(14px) saturate(155%);',
+      'transition:var(--zr-t)}',
+      '#zhdj-sv .sv-bar:hover{transform:translateY(-1px);border-color:rgba(255,180,170,.42);background:var(--zr-tint-hi);box-shadow:var(--zr-shadow-hi)}',
       '#zhdj-sv .sv-bar .sv-txt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;',
       'font-size:12px;color:var(--zr-dim)}',
       '#zhdj-sv .sv-bar .sv-min{margin-left:2px}',
       /* 展开态：310 x 500 玻璃窗口 */
       '#zhdj-sv .sv-card{display:none;box-sizing:border-box;width:310px;height:500px;max-height:calc(100vh - 110px);',
       'flex-direction:column;border-radius:16px;overflow:hidden;position:relative;',
-      'background-image:var(--zr-spec),var(--zr-tint),linear-gradient(180deg,rgba(30,4,8,.40) 0%,rgba(36,6,10,.62) 45%,rgba(24,4,8,.80) 100%),url(' + BG + ');',
-      'background-size:cover,cover,cover,cover;background-position:center top;background-repeat:no-repeat;',
-      'background-color:var(--zr-glass);',
-      'border:1px solid rgba(255,150,140,.24);box-shadow:var(--zr-shadow-hi);',
-      '-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%)}',
+      'background-image:var(--zr-spec),var(--zr-tint-hi),linear-gradient(180deg,rgba(255,90,90,.11),rgba(200,16,46,.17));',
+      'background-color:rgba(22,4,8,.72);background-repeat:no-repeat;',
+      'border:1px solid var(--zr-edge);box-shadow:var(--zr-shadow-hi);',
+      '-webkit-backdrop-filter:blur(18px) saturate(155%);backdrop-filter:blur(18px) saturate(155%)}',
       '#zhdj-sv.sv-open .sv-card{display:flex}',
       '#zhdj-sv.sv-open .sv-bar{display:none}',
       '#zhdj-sv.sv-off{filter:saturate(.45);opacity:.72}',
@@ -1312,11 +1374,12 @@
       '#zhdj-sv .sv-tab.is-active::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:2px;border-radius:2px;',
       'background:linear-gradient(90deg,var(--zr-a),var(--zr-c));box-shadow:0 0 10px rgba(255,90,90,.75)}',
       /* 通用玻璃块（复刻 guide-card） */
-      '#zhdj-sv .sv-box{border:1px solid rgba(255,150,140,.20);border-radius:12px;background-image:var(--zr-tint);background-color:var(--zr-glass);',
-      '-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);',
-      'box-shadow:inset 0 1px 0 var(--zr-rim),inset 0 -1px 0 var(--zr-rim-dim),0 8px 20px rgba(14,2,5,.26);',
-      'padding:11px 12px;margin:0 0 8px}',
+      '#zhdj-sv .sv-box{border:1px solid var(--zr-edge);border-radius:12px;background:var(--zr-tint);',
+      '-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%);',
+      'box-shadow:0 5px 16px rgba(10,2,4,.24),inset 0 1px 0 var(--zr-rim-dim);',
+      'padding:11px 12px;margin:0 0 8px;transition:var(--zr-t)}',
       '#zhdj-sv .sv-box:last-child{margin-bottom:2px}',
+      '#zhdj-sv .sv-box:hover{transform:translateY(-1px);border-color:rgba(255,180,170,.38);background:var(--zr-tint-hi);box-shadow:var(--zr-shadow-hi)}',
       '#zhdj-sv .sv-box-h{display:flex;align-items:center;gap:8px;margin:0 0 7px;padding:0}',
       '#zhdj-sv .sv-num{width:20px;height:20px;flex:0 0 20px;border-radius:6px;display:flex;align-items:center;justify-content:center;',
       'font-size:11px;font-weight:700;color:#2A0407;background:linear-gradient(135deg,var(--zr-a),var(--zr-b));',
@@ -1327,17 +1390,16 @@
       '#zhdj-sv .sv-copy div{margin:2px 0}',
       /* 顶部说明块（复刻 guide-header） */
       '#zhdj-sv .sv-hero{position:relative;border:1px solid rgba(255,150,140,.24);border-radius:12px;padding:12px 13px;margin:0 0 9px;',
-      'background-image:var(--zr-spec),linear-gradient(120deg,rgba(255,90,90,.16),rgba(255,138,92,.10));',
-      'box-shadow:inset 0 1px 0 var(--zr-rim),inset 0 -1px 0 var(--zr-rim-dim),0 8px 22px rgba(14,2,5,.28);',
-      '-webkit-backdrop-filter:blur(12px) saturate(140%);backdrop-filter:blur(12px) saturate(140%)}',
+      'background:linear-gradient(120deg,rgba(255,90,90,.16),rgba(255,138,92,.09) 46%,rgba(200,16,46,.14)),var(--zr-tint);',
+      'box-shadow:0 6px 18px rgba(10,2,4,.26),inset 0 1px 0 var(--zr-rim-dim);',
+      '-webkit-backdrop-filter:blur(16px) saturate(155%);backdrop-filter:blur(16px) saturate(155%);transition:var(--zr-t)}',
       '#zhdj-sv .sv-hero-t{font-size:13.5px;font-weight:600;color:#fff;letter-spacing:.3px}',
       '#zhdj-sv .sv-hero-s{margin-top:3px;font-size:11px;color:var(--zr-dim);padding-right:52px}',
       '#zhdj-sv .sv-tag{position:absolute;right:11px;top:11px;font-size:9.5px;padding:1px 7px;border-radius:999px;',
       'border:1px solid rgba(255,90,90,.42);background:rgba(255,90,90,.12);color:var(--zr-a);letter-spacing:.8px}',
       /* 运行日志（复刻 log / timeline） */
-      '#zhdj-sv .sv-log{border:1px solid rgba(255,150,140,.22);border-radius:12px;',
-      'background-image:var(--zr-tint);background-color:var(--zr-glass2);',
-      'box-shadow:inset 0 1px 0 var(--zr-rim),inset 0 -1px 0 var(--zr-rim-dim),0 6px 18px rgba(14,2,5,.30);',
+      '#zhdj-sv .sv-log{border:1px solid var(--zr-edge);border-radius:12px;background:var(--zr-tint);',
+      'box-shadow:0 6px 18px rgba(10,2,4,.28),inset 0 1px 0 var(--zr-rim-dim);',
       '-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);',
       'padding:8px 11px;margin:8px 0 0;flex:1 1 auto;min-height:88px;overflow-y:auto;overscroll-behavior:contain}',
       '#zhdj-sv .sv-log-it{display:flex;gap:8px;font-size:11px;line-height:1.55;color:var(--zr-dim);padding:2px 0}',
@@ -1347,34 +1409,36 @@
       /* 小鲸页：鲸娘 hero + 答题区预留（复刻 whale-hero / empty） */
       '#zhdj-sv .sv-whale{display:flex;flex-direction:column;align-items:center;gap:9px;padding:4px 0 10px}',
       '#zhdj-sv .sv-whale-av{display:block;width:44px;height:44px;object-fit:cover;border-radius:18px;',
-      'background:radial-gradient(circle at 50% 40%,rgba(255,90,90,.20),rgba(20,4,8,.45));',
-      'border:1px solid rgba(255,90,90,.28);box-shadow:0 4px 14px rgba(20,2,6,.45)}',
+      'background:radial-gradient(circle at 50% 42%,rgba(255,90,90,.20),rgba(14,3,6,.32));',
+      'border:1px solid rgba(255,90,90,.26);box-shadow:0 2px 10px rgba(10,2,4,.32),inset 0 1px 0 rgba(255,255,255,.18)}',
       '#zhdj-sv .sv-whale-bub{display:flex;flex-direction:column;gap:3px;align-items:center;padding:6px 12px;',
-      'border:1px solid rgba(255,150,140,.20);border-radius:14px;background-image:var(--zr-tint);background-color:var(--zr-glass);',
-      'max-width:100%;box-sizing:border-box;box-shadow:inset 0 1px 0 var(--zr-rim),0 6px 16px rgba(14,2,5,.24)}',
+      'border:1px solid var(--zr-edge);border-radius:14px;background:var(--zr-tint);max-width:100%;box-sizing:border-box;',
+      'backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);',
+      'box-shadow:0 6px 18px rgba(10,2,4,.26),inset 0 1px 0 var(--zr-rim-dim)}',
       '#zhdj-sv .sv-whale-txt{font-size:11.5px;line-height:1.6;color:var(--zr-ink);text-align:center}',
       '#zhdj-sv .sv-whale-lv{font-size:10.5px;color:var(--zr-dim)}',
       '#zhdj-sv .sv-whale-lv b{color:var(--zr-a);font-weight:600}',
-      '#zhdj-sv .sv-qa{border:1px solid rgba(255,150,140,.20);border-radius:12px;background-image:var(--zr-tint);background-color:var(--zr-glass2);',
-      'padding:10px 11px;box-shadow:inset 0 1px 0 var(--zr-rim),0 6px 16px rgba(14,2,5,.24)}',
+      '#zhdj-sv .sv-qa{border:1px solid var(--zr-edge);border-radius:12px;background:var(--zr-tint);',
+      'padding:10px 11px;box-shadow:0 5px 16px rgba(10,2,4,.24),inset 0 1px 0 var(--zr-rim-dim)}',
       '#zhdj-sv .sv-qa-h{display:flex;align-items:center;gap:8px;margin:0 0 8px}',
       '#zhdj-sv .sv-qa-empty{display:flex;align-items:center;justify-content:center;min-height:118px;padding:10px 8px;',
       'font-size:11px;line-height:1.7;color:var(--zr-dim);text-align:center;border-radius:9px;',
       'border:1px dashed rgba(255,120,110,.22);background:rgba(255,255,255,.02)}',
       /* 配置页（复刻 setting 卡片） */
       '#zhdj-sv .sv-setting{display:grid;gap:8px}',
-      '#zhdj-sv .sv-cfg-it{display:grid;grid-template-columns:64px 1fr;gap:4px 8px;padding:9px 11px;border:1px solid rgba(255,150,140,.18);',
-      'border-radius:12px;background-image:var(--zr-tint);background-color:var(--zr-glass);',
-      '-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%);',
-      'box-shadow:inset 0 1px 0 var(--zr-rim),0 5px 14px rgba(14,2,5,.22)}',
+      '#zhdj-sv .sv-cfg-it{display:grid;grid-template-columns:64px 1fr;gap:4px 8px;padding:9px 11px;border:1px solid var(--zr-edge);',
+      'border-radius:12px;background:var(--zr-tint-flat);',
+      '-webkit-backdrop-filter:blur(13px) saturate(152%);backdrop-filter:blur(13px) saturate(152%);',
+      'box-shadow:0 5px 14px rgba(10,2,4,.22),inset 0 1px 0 var(--zr-rim-dim);transition:var(--zr-t)}',
+      '#zhdj-sv .sv-cfg-it:hover{transform:translateY(-1px);border-color:rgba(255,180,170,.38);background:var(--zr-tint-hi);box-shadow:var(--zr-shadow-hi)}',
       '#zhdj-sv .sv-cfg-k{font-size:11.5px;color:var(--zr-dim)}',
       '#zhdj-sv .sv-cfg-v{font-size:11.5px;font-weight:600;color:#fff;text-align:right}',
       '#zhdj-sv .sv-cfg-h{grid-column:1/-1;font-size:10.5px;line-height:1.55;color:rgba(255,205,200,.55)}',
       '#zhdj-sv .sv-donate-cap{margin:9px 0 0;text-align:center;font-size:11px}',
       /* 版本声明：本机出品规范样式——圆角卡片内两行居中，X.H 取主题强调色（红色适配） */
       '#zhdj-sv .sv-foot{margin:14px 0 2px;padding:12px 12px 11px;border-radius:14px;text-align:center;',
-      'border:1px solid rgba(255,150,140,.24);background-image:var(--zr-tint);background-color:rgba(255,255,255,.028);',
-      'box-shadow:inset 0 1px 0 var(--zr-rim),inset 0 -1px 0 var(--zr-rim-dim),0 8px 20px rgba(14,2,5,.26);',
+      'border:1px solid var(--zr-edge);background:var(--zr-tint);',
+      'box-shadow:0 8px 20px rgba(10,2,4,.26),inset 0 1px 0 var(--zr-rim);',
       '-webkit-backdrop-filter:blur(12px) saturate(150%);backdrop-filter:blur(12px) saturate(150%)}',
       '#zhdj-sv .sv-sign{margin:0;font-size:11.5px;line-height:1.5;letter-spacing:.2px;color:rgba(255,236,232,.88)}',
       '#zhdj-sv .sv-sign b{font-weight:700;background:linear-gradient(100deg,var(--zr-a),var(--zr-c));',
@@ -1510,10 +1574,10 @@
     var head = mk('div', 'sv-head');
     var title = mk('div', 'sv-title');
     title.appendChild(emblem.cloneNode(true));
-    var nameSpan = mk('span'); nameSpan.textContent = '伴学小鲸';
+    var nameSpan = mk('span'); nameSpan.textContent = 'DS-Whalegirl·虹';
     title.appendChild(nameSpan);
     var headR = mk('div', 'sv-head-r');
-    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.3';
+    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.4';
     var zoomBtn = mk('button', 'sv-icon'); zoomBtn.textContent = '⤢'; zoomBtn.title = '展开 / 收起';
     var minBtn = mk('button', 'sv-icon'); minBtn.textContent = '—'; minBtn.title = '最小化';
     headR.appendChild(ver); headR.appendChild(minBtn); headR.appendChild(zoomBtn);   // 减在左、全屏在右
@@ -1626,7 +1690,7 @@
     // 版本声明：本机出品规范样式（圆角卡片 + 两行居中）
     var foot = mk('div', 'sv-foot');
     var fs = mk('p', 'sv-sign'); fs.innerHTML = 'Developed by <b>X.H</b>';
-    var fm = mk('p', 'sv-meta'); fm.textContent = '伴学小鲸 v0.6.3 · MIT License';
+    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.4 · MIT License';
     foot.appendChild(fs); foot.appendChild(fm);
     paneTip.appendChild(foot);
 
@@ -1694,6 +1758,9 @@
 
     // 面板自愈：页面重绘/路由切换把节点删掉时多轮补挂
     [0, 600, 1500, 3000, 6000, 10000].forEach(function (d) { setTimeout(buildUI, d); });
+    // 常驻复活巡检：换讲、重绘、路由切换后面板失踪就地补挂（含整页刷新兜底）
+    try { window.setInterval(function () { try { revive(); } catch (e) {} }, 1800); } catch (e) {}
+    window.addEventListener('pageshow', function () { try { revive(); } catch (e) {} });
 
     // 弹窗监视独立高频通道（最高优先级）
     safeInterval(function () {
@@ -1747,7 +1814,7 @@
     if (document.getElementById('zhdj-sv-mini')) return;
     var b = document.createElement('div');
     b.id = 'zhdj-sv-mini';
-    b.textContent = '伴学小鲸 v0.6.3';
+    b.textContent = 'DS-Whalegirl·虹 v0.6.4';
     b.style.cssText = 'position:fixed;right:14px;bottom:74px;z-index:2147483000;background:rgba(60,10,14,.88);color:#fff0ee;font:12px/1.4 system-ui,sans-serif;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,120,110,.4)';
     (document.body || document.documentElement).appendChild(b);
   }
@@ -1779,6 +1846,7 @@
 
   function route() {
     if (isVideoPage()) {
+      try { revive(); } catch (e) {}
       bootPanel();
     } else if (!booted) {
       courseAdvanceLoop();
