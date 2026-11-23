@@ -4,8 +4,8 @@
 // @version      0.6.4
 // @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的伴学脚本——弹窗自动确认、断流自动拉起、固定 1x、跨讲自动续播（整页重新接管）。液态玻璃面板（红色主题）。不含答题/测试/提交。
 // @author       X.H
-// @match        https://zhdj.cumtb.edu.cn/*
-// @match        https://zhdj.cumtb.edu.cn/training-m/*
+// @match        *://zhdj.cumtb.edu.cn/*
+// @match        *://*.zhdj.cumtb.edu.cn/*
 // @run-at       document-idle
 // @grant        none
 // @homepageURL  https://dream-architect1026.github.io/ds-whalegirl-hong/
@@ -1308,8 +1308,8 @@
       '--zr-tint:linear-gradient(155deg,rgba(255,255,255,.10),rgba(255,255,255,.028) 40%,rgba(28,6,10,.30));',
       '--zr-tint-hi:linear-gradient(155deg,rgba(255,255,255,.20),rgba(255,255,255,.07) 34%,rgba(34,6,10,.34) 100%);',
       '--zr-tint-flat:linear-gradient(160deg,rgba(255,255,255,.075),rgba(255,255,255,.018) 58%,rgba(24,5,9,.20));',
-      '--zr-spec:linear-gradient(160deg,rgba(255,255,255,.13) 0%,rgba(255,255,255,.02) 42%,rgba(255,255,255,0) 70%);',
-      '--zr-shadow:0 8px 22px rgba(10,2,4,.34),inset 0 1px 0 var(--zr-rim-dim);',
+      '--zr-spec:linear-gradient(160deg,rgba(255,255,255,.24),rgba(255,255,255,.05) 42%,transparent 74%);',
+      '--zr-shadow:0 8px 22px rgba(10,2,4,.30),inset 0 1px 0 var(--zr-rim-dim);',
       '--zr-shadow-hi:0 12px 28px rgba(10,2,4,.42),0 0 20px rgba(255,90,90,.16),inset 0 1px 0 var(--zr-rim);',
       '--zr-t:background .28s ease,border-color .28s ease,box-shadow .28s ease,transform .28s cubic-bezier(.34,1.2,.64,1),backdrop-filter .28s ease,-webkit-backdrop-filter .28s ease,color .2s ease;',
       'color-scheme:dark;',
