@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         DS-Whalegirl·虹（ZHDJ 视频增强）
 // @namespace    zhdj.cumtb.shuavideo
-// @version      0.6.4
-// @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的伴学脚本——弹窗自动确认、断流自动拉起、固定 1x、跨讲自动续播（整页重新接管）。液态玻璃面板（红色主题）。不含答题/测试/提交。
+// @version      0.6.5
+// @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的伴学脚本——本讲内自动点「确定」、自动点下一段、断流自动拉起、固定 1x。换讲/换课由你自己点，脚本只保证每页都注入、进度不中断。液态玻璃面板（红色主题）。不含答题/测试/提交。
 // @author       X.H
 // @match        *://zhdj.cumtb.edu.cn/*
 // @match        *://*.zhdj.cumtb.edu.cn/*
@@ -476,105 +476,41 @@
       }
     }
     var target = rows[idx + 1] || null;
-    if (!target) { courseFinished(); return false; }
+    if (!target) {
+      note = '本讲最后一段，换讲请手动';
+      log('本讲最后一段，换讲请手动');
+      render();
+      return false;
+    }
     var curTxt = (rows[idx].innerText || '').replace(/\s+/g, '');
     var nxtTxt = (target.innerText || '').replace(/\s+/g, '');
-    if (curTxt === nxtTxt) { courseFinished(); return false; }
+    if (curTxt === nxtTxt) return false;
     var clickable = target.querySelector('a,button') || target;
-    var href = navUrlOf(target);
-    if (href) { goLecture(href); return true; }
-    realClick(clickable);
-    log('切换下一讲');
-    navGuard();
+    realClick(clickable);          // 只在本讲内点下一段，绝不导航、绝不换课
+    log('本讲内切下一段');
     return true;
   }
 
-  /* ---------------- 跨讲再接管（P0 · v0.6.4） ----------------
-     站点换讲不刷新文档：React 重绘会把面板节点连根拔掉，旧实例留在上一个
-     页面里。这里三条防线：
-     ① 能拿到下一讲 URL 就直接整页导航，让脚本在 document-idle 重新注入；
-     ② 只能点按钮时，点完盯着「URL 变了但面板没了」，命中就整页刷新一次；
-     ③ 常驻 revive 巡检，面板失踪就地补挂，连续失败再整页刷新（每讲限一次）。 */
-  var NAV_KEY = 'zhdj_sv_nav_v1', FRESH_KEY = 'zhdj_sv_fresh_v1', reviveFail = 0;
-
-  function navUrlOf(row) {
-    try {
-      var a = row.closest ? row.closest('a[href]') : null;
-      if (a && /videoDetail|video-detail/i.test(a.getAttribute('href') || '')) return a.href;
-      var list = row.querySelectorAll ? row.querySelectorAll('a[href]') : [];
-      for (var i = 0; i < list.length; i++) {
-        if (/videoDetail|video-detail/i.test(list[i].getAttribute('href') || '')) return list[i].href;
-      }
-    } catch (e) {}
-    return '';
-  }
-
-  function goLecture(url) {
-    try { sessionStorage.setItem(NAV_KEY, JSON.stringify({ u: url, t: Date.now() })); } catch (e) {}
-    log('跳转下一讲（整页加载）');
-    try { location.assign(url); } catch (e) { try { location.href = url; } catch (e2) {} }
-  }
-
-  function navGuard() {
-    var from = location.href, n = 0;
-    var iv = window.setInterval(function () {
-      n++;
-      var hasPanel = !!(document.getElementById('zhdj-sv') || document.getElementById('zhdj-sv-mini'));
-      if (location.href !== from && !hasPanel) { window.clearInterval(iv); forceFresh('换讲后未接管'); return; }
-      if (n > 14) window.clearInterval(iv);
-    }, 700);
-  }
-
-  function forceFresh(reason) {
-    var key = FRESH_KEY + '|' + location.pathname;
-    try {
-      if (sessionStorage.getItem(key)) return;      // 同一讲只强制刷新一次，绝不进死循环
-      sessionStorage.setItem(key, String(Date.now()));
-    } catch (e) {}
-    log('整页刷新接管：' + reason);
-    try { location.reload(); } catch (e) {}
-  }
+  /* ---------------- 面板自愈（v0.6.5 · 只补挂，不导航、不刷新） ----------------
+     v0.6.5 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
+     换讲与换课由用户手动点。这里只做一件事——面板节点被站点重绘拔掉时，就地补挂。 */
+  var reviveFail = 0;
 
   function revive() {
     if (!isVideoPage()) return;
     if (document.getElementById('zhdj-sv') || document.getElementById('zhdj-sv-mini')) { reviveFail = 0; return; }
     reviveFail++;
     try { buildUI(); } catch (e) {}
-    if (!document.getElementById('zhdj-sv') && !document.getElementById('zhdj-sv-mini') && reviveFail >= 3) {
-      reviveFail = 0;
-      forceFresh('面板连续未挂载');
-    }
   }
 
-  /* ---------------- 本课结束 → 自动找下一门课 ---------------- */
-  var courseTimer = 0, courseLastAt = 0, courseTries = 0;
+  /* ---------------- 本讲结束：只提示，不换课（v0.6.5 删除全部换课/换讲逻辑） ---------------- */
   function courseFinished() {
-    if (!allDone) { allDone = true; log('本课全部讲完'); }
-    if (courseTimer) return;
-    var now = Date.now();
-    if (courseTries >= 5 && now - courseLastAt < 10 * 60 * 1000) {
-      note = '已连续 5 次找不到未完成课程，先停在这里';
+    if (!allDone) {
+      allDone = true;
+      note = '本讲已播完，换讲请手动点';
+      log('本讲已播完，换讲请手动点');
       render();
-      return;
     }
-    if (now - courseLastAt < 90 * 1000) return;
-    // 频繁换课保护：15 分钟内超过 12 次跳转就停手，避免在已完成课上来回弹
-    var hist = jsonOf(storeGet('zhdj_sv_jump', true), []);
-    if (!hist || typeof hist.filter !== 'function') hist = [];
-    hist = hist.filter(function (t) { return now - t < 15 * 60 * 1000; });
-    if (hist.length >= 12) {
-      note = '换课过于频繁，已暂停自动换课';
-      render();
-      return;
-    }
-    hist.push(now);
-    storeSet('zhdj_sv_jump', JSON.stringify(hist), true);
-    courseLastAt = now; courseTries++;
-    courseTimer = setTimeout(function () {
-      courseTimer = 0;          // 跳转没生效也要解锁，避免死等
-      log('返回课程页找下一门');
-      try { location.href = 'https://zhdj.cumtb.edu.cn/training/learn'; } catch (e) {}
-    }, 8000);
   }
 
   function pctOf(txt) {
@@ -639,7 +575,7 @@
 
   function onLearnPage() {
     if (!/^\/training/.test(location.pathname)) return false;   // 只在培训平台内动作，门户首页不碰
-    if (/videoDetails|video-detail/.test(location.pathname)) return false;
+    if (/video-?details?/i.test(location.pathname)) return false;
     tickUnfinishedOnly();
     if (clickLearnMenu()) return true;
 
@@ -1587,7 +1523,7 @@
     var nameSpan = mk('span'); nameSpan.textContent = 'DS-Whalegirl·虹';
     title.appendChild(nameSpan);
     var headR = mk('div', 'sv-head-r');
-    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.4';
+    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.5';
     var zoomBtn = mk('button', 'sv-icon'); zoomBtn.textContent = '⤢'; zoomBtn.title = '展开 / 收起';
     var minBtn = mk('button', 'sv-icon'); minBtn.textContent = '—'; minBtn.title = '最小化';
     headR.appendChild(ver); headR.appendChild(minBtn); headR.appendChild(zoomBtn);   // 减在左、全屏在右
@@ -1702,7 +1638,7 @@
     // 版本声明：本机出品规范样式（圆角卡片 + 两行居中）
     var foot = mk('div', 'sv-foot');
     var fs = mk('p', 'sv-sign'); fs.innerHTML = 'Developed by <b>X.H</b>';
-    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.4 · MIT License';
+    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.5 · MIT License';
     foot.appendChild(fs); foot.appendChild(fm);
     paneTip.appendChild(foot);
 
@@ -1731,26 +1667,25 @@
   var booted = false;
 
   function isVideoPage() {
-    return /\/training\/videoDetails\/|\/training-m\/video-detail/.test(location.pathname);
+    // 站点真实路径是 /training/videodetails/8627/737（小写 d），旧正则只认大写 D，导致真机从不启动
+    return /\/training\/video-?details?\/|\/training-m\/video-?detail/i.test(location.pathname);
   }
 
   function bootPanel() {
     if (booted) return;
     booted = true;
 
-    // 跨讲标记：新文档里读一次就清，既留痕也不留死标记
+    // 注入留痕：每次注入都写一行，方便一眼看出「这页到底注没注入、装的是哪版」
     try {
-      var nvRaw = sessionStorage.getItem(NAV_KEY);
-      if (nvRaw) {
-        var nv = JSON.parse(nvRaw);
-        if (nv && nv.t && Date.now() - nv.t < 30000) log('接续跳讲 · ' + String(nv.u || '').replace(/^https?:\/\/[^/]+/, ''));
-        sessionStorage.removeItem(NAV_KEY);
-      }
+      log('v0.6.5 已注入 · ' + (location.pathname + location.search));
+      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.5 @ ' + location.href);
     } catch (e) {}
+    var oldNav = ['zhdj', 'sv', 'nav', 'v1'].join('_');   // 清掉旧版残留的死标记
+    try { sessionStorage.removeItem(oldNav); } catch (e) {}
 
     document.addEventListener('pointerdown', function () { lastPointerDown = Date.now(); }, true);
 
-    // Alt+N：手动下一讲（与自动逻辑同一套）
+    // Alt+N：本讲内下一段（不会离开本讲）
     document.addEventListener('keydown', function (e) {
       if (e.altKey && (e.key === 'n' || e.key === 'N')) { e.preventDefault(); nextChapter(); }
     }, true);
@@ -1789,7 +1724,7 @@
       if (!handleDialogs() && cfg.on && video && video.paused && !userPaused) tryPlay();
     }, 600, '弹窗');
 
-    // 长跑看门狗：45 秒不推进 → 拉播放 → 切下一讲 → 重载
+    // 长跑看门狗：45 秒不推进 → 重新拉起播放（不换讲、不刷新，绝不打断连续性）
     var lastCt = -1, lastMoveAt = Date.now(), stallRounds = 0;
     function watchdog() {
       // 后台标签页会被浏览器节流，这一轮不做停滞判定，避免自己把自己重启
@@ -1800,8 +1735,8 @@
       if (Date.now() - lastMoveAt < 45 * 1000) return;
       stallRounds++; lastMoveAt = Date.now();
       if (stallRounds === 1) { log('停滞：尝试拉起播放'); tryPlay(); }
-      else if (stallRounds === 2) { log('停滞：切下一讲'); nextChapter(); }
-      else { log('停滞：重载本页'); stallRounds = 0; try { location.reload(); } catch (e) {} }
+      else if (stallRounds === 2) { log('停滞：再拉一次播放'); tryPlay(); }
+      else { stallRounds = 0; log('停滞：等你自己处理，我不换讲也不刷新'); }
     }
     safeInterval(watchdog, 15000, '看门狗');
 
@@ -1836,7 +1771,7 @@
     if (document.getElementById('zhdj-sv-mini')) return;
     var b = document.createElement('div');
     b.id = 'zhdj-sv-mini';
-    b.textContent = 'DS-Whalegirl·虹 v0.6.4';
+    b.textContent = 'DS-Whalegirl·虹 v0.6.5';
     b.style.cssText = 'position:fixed;right:14px;bottom:74px;z-index:2147483000;background:rgba(60,10,14,.88);color:#fff0ee;font:12px/1.4 system-ui,sans-serif;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,120,110,.4)';
     (document.body || document.documentElement).appendChild(b);
   }
