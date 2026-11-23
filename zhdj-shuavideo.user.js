@@ -1480,6 +1480,16 @@
       '#zhdj-sv .sv-donate p{margin:0 0 9px;font-size:11.5px;line-height:1.6;color:var(--zr-dim)}',
       '#zhdj-sv .sv-donate img{display:block;width:236px;margin:0 auto;border-radius:10px;',
       'background:#fff;padding:5px;box-shadow:0 8px 24px rgba(0,0,0,.42)}',
+      /* 引导页作用域压缩：仅 guide 页收紧间距/行高，打赏卡改横向排布，保证 500px 卡内完整放下；其余四页签规则不动 */
+      '#zhdj-sv .sv-pane-guide .sv-hero{padding:7px 11px;margin:0 0 4px}',
+      '#zhdj-sv .sv-pane-guide .sv-box{padding:7px 10px;margin:0 0 4px}',
+      '#zhdj-sv .sv-pane-guide .sv-box-h{margin:0 0 3px}',
+      '#zhdj-sv .sv-pane-guide .sv-copy{line-height:1.4;font-size:11px}',
+      '#zhdj-sv .sv-pane-guide .sv-donate{display:flex;gap:10px;align-items:center;padding:6px 10px;margin:0 0 2px}',
+      '#zhdj-sv .sv-pane-guide .sv-donate-txt{flex:1 1 auto;min-width:0}',
+      '#zhdj-sv .sv-pane-guide .sv-donate h3{margin:0 0 3px;font-size:12px}',
+      '#zhdj-sv .sv-pane-guide .sv-donate p{margin:0 0 3px;line-height:1.3}',
+      '#zhdj-sv .sv-pane-guide .sv-donate img{flex:0 0 80px;width:80px;height:80px;object-fit:cover;border-radius:8px}',
       '#zhdj-sv .sv-emblem{width:22px;height:22px;flex:0 0 22px;border-radius:50%;object-fit:cover;display:block;',
       'box-shadow:0 0 0 1px rgba(255,255,255,.34),0 3px 10px rgba(255,60,60,.34)}'
     ].join('');
@@ -1659,7 +1669,7 @@
     paneCfg.appendChild(setBox);
 
     /* ④ 引导页（含打赏卡） */
-    paneGuide = mk('div'); paneGuide.style.display = 'none';
+    paneGuide = mk('div', 'sv-pane-guide'); paneGuide.style.display = 'none';
     paneGuide.appendChild(hero('引导', '装上就能用，无需任何配置', '自动播放'));
     paneGuide.appendChild(box('01', '先看一遍再说', '脚本会自动点「继续播放」并在被暂停时拉起播放，你只需保持页面开着。'));
     paneGuide.appendChild(box('02', '进度怎么算', '站点口径：完整看一遍、出现「播放完毕」提示框才算完成。任何跳播都会被拉回，所以脚本不做加速。'));
@@ -1668,12 +1678,14 @@
     var di = donateImage();
     if (di) {
       var dc = mk('div', 'sv-donate');
+      var dt = mk('div', 'sv-donate-txt');
       var h3 = mk('h3'); h3.textContent = '赞助开发 · 随缘打赏';
       var p1 = mk('p');
       p1.innerHTML = '如果脚本帮到了你，欢迎扫码请作者喝杯奶茶～<br>· 单人打赏<b>上限 1.88 元</b>。<br>· <b>矿大北京的学弟学妹们不要白嫖哦</b>。';
       var img = mk('img'); img.src = di; img.alt = '支付宝赞助码';
       var p2 = mk('p', 'sv-donate-cap'); p2.textContent = '打开支付宝「扫一扫」';
-      dc.appendChild(h3); dc.appendChild(p1); dc.appendChild(img); dc.appendChild(p2);
+      dt.appendChild(h3); dt.appendChild(p1); dt.appendChild(p2);
+      dc.appendChild(dt); dc.appendChild(img);
       paneGuide.appendChild(dc);
     }
 
