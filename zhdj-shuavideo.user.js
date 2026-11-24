@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DS-Whalegirl·虹（ZHDJ 视频增强）
 // @namespace    zhdj.cumtb.shuavideo
-// @version      0.6.11
+// @version      0.6.12
 // @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的伴学脚本——本讲内自动点「确定」、自动点下一段；本课刷完自动回列表换下一门未学完的课；断流自动拉起、固定 1x。液态玻璃面板（红色主题，卡片带立绘底纹）。不含答题/测试/提交。
 // @author       X.H
 // @match        *://zhdj.cumtb.edu.cn/*
@@ -180,7 +180,7 @@
   var lastHardReload = 0, mediaErr = 0, noVideoTries = 0, playFail = 0;
   function hardReload(reason) {
     var now = Date.now();
-    if (now - lastHardReload < 6 * 60 * 1000) return false;
+    if (now - lastHardReload < 20 * 60 * 1000) return false;
     if (netDown) { note = '网络断开，暂不刷新'; render(); return false; }
     if (!canReload()) { note = '刷新过于频繁，已暂停自动刷新'; render(); return false; }
     lastHardReload = now;
@@ -299,6 +299,7 @@
     try { p = video.play(); } catch (e) { return; }
     if (p && p.catch) {
       p.catch(function (err) {
+        if (video && video.paused === false) { playFail = 0; return; }   // 其实已经播起来了，不算失败
         if (!err || err.name !== 'NotAllowedError') {
           playFail++;
           if (playFail >= 5) { playFail = 0; hardReload('播放启动失败'); }
@@ -362,9 +363,11 @@
     v.addEventListener('canplay', function () { if (cfg.on && !userPaused) tryPlay(); });
     v.addEventListener('playing', function () { mediaErr = 0; });
     v.addEventListener('error', function () {
-      mediaErr++;
-      log('媒体错误 ' + mediaErr);
-      if (mediaErr >= 3) { mediaErr = 0; hardReload('媒体解码错误'); }
+      // 只有真的加载/解码失败才算致命；P2P 播放器切片段的瞬时报错不计入，避免把正常播放刷成「自愈刷页」
+      var fatal = !!v.error && v.readyState === 0;
+      mediaErr = fatal ? mediaErr + 1 : 0;
+      log(fatal ? ('媒体错误 ' + mediaErr) : '片段抖动，已忽略');
+      if (mediaErr >= 5) { mediaErr = 0; hardReload('媒体解码错误'); }
     });
     v.addEventListener('stalled', function () { log('缓冲停滞'); });
     v.addEventListener('waiting', function () { log('缓冲中'); });
@@ -489,8 +492,8 @@
     return true;
   }
 
-  /* ---------------- 面板自愈（v0.6.11 · 只补挂，不导航、不刷新） ----------------
-     v0.6.11 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
+  /* ---------------- 面板自愈（v0.6.12 · 只补挂，不导航、不刷新） ----------------
+     v0.6.12 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
      换讲与换课由用户手动点。这里只做一件事——面板节点被站点重绘拔掉时，就地补挂。 */
   var reviveFail = 0;
 
@@ -501,7 +504,7 @@
     try { buildUI(); } catch (e) {}
   }
 
-  /* ---------------- 两级换课（v0.6.11）：讲内自动，本课刷完自动回列表换下一门 ----------------
+  /* ---------------- 两级换课（v0.6.12）：讲内自动，本课刷完自动回列表换下一门 ----------------
      一级：本讲（分讲）之间，翻页内点下一段（在 nextChapter 里做，不跳文档）；
      二级：本课四段全 100% 后，回 /training/learn 由 courseAdvanceLoop 接管下一门未学完的课。
      两条都带节流，避免在已完成课上反复弹。 */
@@ -1545,7 +1548,7 @@
     var nameSpan = mk('span'); nameSpan.textContent = 'DS-Whalegirl·虹';
     title.appendChild(nameSpan);
     var headR = mk('div', 'sv-head-r');
-    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.11';
+    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.12';
     var zoomBtn = mk('button', 'sv-icon'); zoomBtn.textContent = '⤢'; zoomBtn.title = '展开 / 收起'; zoomBtn.id = 'sv-zoom-btn';
     var minBtn = mk('button', 'sv-icon'); minBtn.textContent = '—'; minBtn.title = '最小化'; minBtn.id = 'sv-min-btn';
     headR.appendChild(ver); headR.appendChild(minBtn); headR.appendChild(zoomBtn);   // 减在左、全屏在右
@@ -1660,7 +1663,7 @@
     // 版本声明：本机出品规范样式（圆角卡片 + 两行居中）
     var foot = mk('div', 'sv-foot');
     var fs = mk('p', 'sv-sign'); fs.innerHTML = 'Developed by <b>X.H</b>';
-    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.11 · MIT License';
+    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.12 · MIT License';
     foot.appendChild(fs); foot.appendChild(fm);
     paneTip.appendChild(foot);
 
@@ -1700,8 +1703,8 @@
 
     // 注入留痕：每次注入都写一行，方便一眼看出「这页到底注没注入、装的是哪版」
     try {
-      log('v0.6.11 已注入 · ' + (location.pathname + location.search));
-      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.11 @ ' + location.href);
+      log('v0.6.12 已注入 · ' + (location.pathname + location.search));
+      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.12 @ ' + location.href);
     } catch (e) {}
     var oldNav = ['zhdj', 'sv', 'nav', 'v1'].join('_');   // 清掉旧版残留的死标记
     try { sessionStorage.removeItem(oldNav); } catch (e) {}
@@ -1821,7 +1824,7 @@
     if (document.getElementById('zhdj-sv-mini')) return;
     var b = document.createElement('div');
     b.id = 'zhdj-sv-mini';
-    b.textContent = 'DS-Whalegirl·虹 v0.6.11';
+    b.textContent = 'DS-Whalegirl·虹 v0.6.12';
     b.style.cssText = 'position:fixed;right:14px;bottom:74px;z-index:2147483647;background:rgba(60,10,14,.88);color:#fff0ee;font:12px/1.4 system-ui,sans-serif;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,120,110,.4)';
     (document.body || document.documentElement).appendChild(b);
   }
