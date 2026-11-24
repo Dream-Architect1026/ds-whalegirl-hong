@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DS-Whalegirl·虹（ZHDJ 视频增强）
 // @namespace    zhdj.cumtb.shuavideo
-// @version      0.6.13
+// @version      0.6.14
 // @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的伴学脚本——本讲内自动点「确定」、自动点下一段；本课刷完自动回列表换下一门未学完的课；断流自动拉起、固定 1x。液态玻璃面板（红色主题，卡片带立绘底纹）。不含答题/测试/提交。
 // @author       X.H
 // @match        *://zhdj.cumtb.edu.cn/*
@@ -273,7 +273,7 @@
       safeTimeout(function () { ensure(); tryPlay(); }, 2500, 'dlg');
       if (rule.next) {
         setTimeout(function () {
-          if (!nextChapter()) { allDone = true; note = '最后一讲已完成'; render(); }
+          endOfChapter();
         }, 1200);
       }
       return true;
@@ -383,7 +383,7 @@
 
     v.addEventListener('ended', function () {
       setTimeout(function () {
-        if (!nextChapter()) { allDone = true; note = '最后一讲已完成'; render(); }
+        endOfChapter();
       }, 800);
     });
     v.addEventListener('pause', function () {
@@ -438,6 +438,10 @@
       if (!t || t.length > 160) continue;
       var m = t.match(new RegExp(TIME_RE.source, 'g'));
       if (!m || m.length !== 1) continue;
+      // v0.6.14：分讲行必须「百分比 + 标题」齐全，排掉只有时间/只有百分比的碎片节点，
+      // 否则 rows 里混进碎片会导致 currentIndex 认错、在同一段上反复点
+      if (!/\d+\s*%/.test(t)) continue;
+      if (t.replace(/[0-9:%.、,，\s]/g, '').length < 4) continue;
       if (el.querySelector('video')) continue;
       var r = el.getBoundingClientRect();
       if (r.height > 140 || r.height < 20) continue;
@@ -457,9 +461,13 @@
     return /已完成|已学完/.test(html);
   }
 
+  var lastAdvEl = null, lastAdvAt = 0;
+
   function nextChapter() {
     var rows = chapterRows();
     if (!rows.length) return false;
+    // v0.6.14：本课所有分讲都已 100% → 不再在末尾反复点，直接进二级换课
+    if (rows.length >= 2 && rows.every(isDone)) { courseFinished(); return false; }
     var idx = -1;
     for (var i = 0; i < rows.length; i++) {
       if (rows[i].classList.contains('active') ||
@@ -486,14 +494,29 @@
     var curTxt = (rows[idx].innerText || '').replace(/\s+/g, '');
     var nxtTxt = (target.innerText || '').replace(/\s+/g, '');
     if (curTxt === nxtTxt) return false;
+    // 同一个目标 25 秒内只点一次，防止在讲末反复点、把自己卡死在缓冲里
+    if (lastAdvEl === target && Date.now() - lastAdvAt < 25 * 1000) return false;
+    lastAdvEl = target; lastAdvAt = Date.now();
     var clickable = target.querySelector('a,button') || target;
     realClick(clickable);          // 只在本讲内点下一段，绝不导航、绝不换课
     log('本讲内切下一段');
     return true;
   }
 
-  /* ---------------- 面板自愈（v0.6.13 · 只补挂，不导航、不刷新） ----------------
-     v0.6.13 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
+  // v0.6.14：讲末统一收口——全 100% 就换课；还有下一段就推进；都没有就等平台结算（限次）
+  var endTries = 0;
+  function endOfChapter() {
+    var rows = chapterRows();
+    if (rows.length >= 2 && rows.every(isDone)) { endTries = 0; courseFinished(); return true; }
+    if (nextChapter()) { endTries = 0; return true; }
+    if (endTries >= 6) { note = '本讲已播完，平台未结算，请手动'; render(); return false; }
+    endTries++;
+    safeTimeout(function () { try { endOfChapter(); } catch (e) {} }, 5000, 'ending');
+    return false;
+  }
+
+  /* ---------------- 面板自愈（v0.6.14 · 只补挂，不导航、不刷新） ----------------
+     v0.6.14 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
      换讲与换课由用户手动点。这里只做一件事——面板节点被站点重绘拔掉时，就地补挂。 */
   var reviveFail = 0;
 
@@ -504,7 +527,7 @@
     try { buildUI(); } catch (e) {}
   }
 
-  /* ---------------- 两级换课（v0.6.13）：讲内自动，本课刷完自动回列表换下一门 ----------------
+  /* ---------------- 两级换课（v0.6.14）：讲内自动，本课刷完自动回列表换下一门 ----------------
      一级：本讲（分讲）之间，翻页内点下一段（在 nextChapter 里做，不跳文档）；
      二级：本课四段全 100% 后，回 /training/learn 由 courseAdvanceLoop 接管下一门未学完的课。
      两条都带节流，避免在已完成课上反复弹。 */
@@ -1655,7 +1678,7 @@
     var nameSpan = mk('span'); nameSpan.textContent = 'DS-Whalegirl·虹';
     title.appendChild(nameSpan);
     var headR = mk('div', 'sv-head-r');
-    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.13';
+    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.14';
     var zoomBtn = mk('button', 'sv-icon'); zoomBtn.textContent = '⤢'; zoomBtn.title = '展开 / 收起'; zoomBtn.id = 'sv-zoom-btn';
     var minBtn = mk('button', 'sv-icon'); minBtn.textContent = '—'; minBtn.title = '最小化'; minBtn.id = 'sv-min-btn';
     headR.appendChild(ver); headR.appendChild(minBtn); headR.appendChild(zoomBtn);   // 减在左、全屏在右
@@ -1769,7 +1792,7 @@
     // 版本声明：本机出品规范样式（圆角卡片 + 两行居中）
     var foot = mk('div', 'sv-foot');
     var fs = mk('p', 'sv-sign'); fs.innerHTML = 'Developed by <b>X.H</b>';
-    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.13 · MIT License';
+    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.14 · MIT License';
     foot.appendChild(fs); foot.appendChild(fm);
     paneTip.appendChild(foot);
 
@@ -1809,8 +1832,8 @@
 
     // 注入留痕：每次注入都写一行，方便一眼看出「这页到底注没注入、装的是哪版」
     try {
-      log('v0.6.13 已注入 · ' + (location.pathname + location.search));
-      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.13 @ ' + location.href);
+      log('v0.6.14 已注入 · ' + (location.pathname + location.search));
+      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.14 @ ' + location.href);
     } catch (e) {}
     var oldNav = ['zhdj', 'sv', 'nav', 'v1'].join('_');   // 清掉旧版残留的死标记
     try { sessionStorage.removeItem(oldNav); } catch (e) {}
@@ -1888,6 +1911,9 @@
     function watchdog() {
       // 后台标签页会被浏览器节流，这一轮不做停滞判定，避免自己把自己重启
       if (document.hidden && video && !video.paused) return;
+      // 停在讲末：不当成「停滞」，直接走讲末收口（全 100% → 换课；否则推进）
+      if (video && isFinite(video.duration) && video.duration > 10 &&
+          video.currentTime >= video.duration - 2) { endOfChapter(); return; }
       if (video && !video.paused && !video.seeking && video.currentTime > (lastCt + 0.05)) {
         lastCt = video.currentTime; lastMoveAt = Date.now(); stallRounds = 0; return;
       }
@@ -1930,7 +1956,7 @@
     if (document.getElementById('zhdj-sv-mini')) return;
     var b = document.createElement('div');
     b.id = 'zhdj-sv-mini';
-    b.textContent = 'DS-Whalegirl·虹 v0.6.13';
+    b.textContent = 'DS-Whalegirl·虹 v0.6.14';
     b.style.cssText = 'position:fixed;right:14px;bottom:74px;z-index:2147483647;background:rgba(60,10,14,.88);color:#fff0ee;font:12px/1.4 system-ui,sans-serif;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,120,110,.4)';
     (document.body || document.documentElement).appendChild(b);
   }
