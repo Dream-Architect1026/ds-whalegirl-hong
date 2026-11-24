@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DS-Whalegirl·虹（ZHDJ 视频增强）
 // @namespace    zhdj.cumtb.shuavideo
-// @version      0.6.10
+// @version      0.6.11
 // @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的伴学脚本——本讲内自动点「确定」、自动点下一段；本课刷完自动回列表换下一门未学完的课；断流自动拉起、固定 1x。液态玻璃面板（红色主题，卡片带立绘底纹）。不含答题/测试/提交。
 // @author       X.H
 // @match        *://zhdj.cumtb.edu.cn/*
@@ -489,8 +489,8 @@
     return true;
   }
 
-  /* ---------------- 面板自愈（v0.6.10 · 只补挂，不导航、不刷新） ----------------
-     v0.6.10 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
+  /* ---------------- 面板自愈（v0.6.11 · 只补挂，不导航、不刷新） ----------------
+     v0.6.11 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
      换讲与换课由用户手动点。这里只做一件事——面板节点被站点重绘拔掉时，就地补挂。 */
   var reviveFail = 0;
 
@@ -501,7 +501,7 @@
     try { buildUI(); } catch (e) {}
   }
 
-  /* ---------------- 两级换课（v0.6.10）：讲内自动，本课刷完自动回列表换下一门 ----------------
+  /* ---------------- 两级换课（v0.6.11）：讲内自动，本课刷完自动回列表换下一门 ----------------
      一级：本讲（分讲）之间，翻页内点下一段（在 nextChapter 里做，不跳文档）；
      二级：本课四段全 100% 后，回 /training/learn 由 courseAdvanceLoop 接管下一门未学完的课。
      两条都带节流，避免在已完成课上反复弹。 */
@@ -640,7 +640,7 @@
     var uiSaved = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
     if (typeof uiSaved.open === 'boolean') uiOpen = uiSaved.open;
   } catch (e) {}
-  var uiTab = (uiSaved && ['whale', 'cfg', 'guide', 'tip'].indexOf(uiSaved.tab) >= 0) ? uiSaved.tab : 'status';
+  var uiTab = 'status';   // 固定落在「状态」页，保证一进来就能看到日志与底纹
   var lastPct = -1;
 
   var logs = [], logBox = null, lastLog = { s: '', at: 0 };
@@ -1545,9 +1545,9 @@
     var nameSpan = mk('span'); nameSpan.textContent = 'DS-Whalegirl·虹';
     title.appendChild(nameSpan);
     var headR = mk('div', 'sv-head-r');
-    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.10';
-    var zoomBtn = mk('button', 'sv-icon'); zoomBtn.textContent = '⤢'; zoomBtn.title = '展开 / 收起';
-    var minBtn = mk('button', 'sv-icon'); minBtn.textContent = '—'; minBtn.title = '最小化';
+    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.11';
+    var zoomBtn = mk('button', 'sv-icon'); zoomBtn.textContent = '⤢'; zoomBtn.title = '展开 / 收起'; zoomBtn.id = 'sv-zoom-btn';
+    var minBtn = mk('button', 'sv-icon'); minBtn.textContent = '—'; minBtn.title = '最小化'; minBtn.id = 'sv-min-btn';
     headR.appendChild(ver); headR.appendChild(minBtn); headR.appendChild(zoomBtn);   // 减在左、全屏在右
     head.appendChild(title); head.appendChild(headR);
 
@@ -1660,7 +1660,7 @@
     // 版本声明：本机出品规范样式（圆角卡片 + 两行居中）
     var foot = mk('div', 'sv-foot');
     var fs = mk('p', 'sv-sign'); fs.innerHTML = 'Developed by <b>X.H</b>';
-    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.10 · MIT License';
+    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.11 · MIT License';
     foot.appendChild(fs); foot.appendChild(fm);
     paneTip.appendChild(foot);
 
@@ -1678,6 +1678,7 @@
     tabCfg.onclick = function () { switchTab('cfg'); };
     tabGuide.onclick = function () { switchTab('guide'); };
     tabTip.onclick = function () { switchTab('tip'); };
+    zoomBtn.onclick = function (e) { e.stopPropagation(); uiOpen = !uiOpen; saveUI(); render(); };
 
     (document.body || document.documentElement).appendChild(panel);
     switchTab(uiTab);
@@ -1699,13 +1700,40 @@
 
     // 注入留痕：每次注入都写一行，方便一眼看出「这页到底注没注入、装的是哪版」
     try {
-      log('v0.6.10 已注入 · ' + (location.pathname + location.search));
-      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.10 @ ' + location.href);
+      log('v0.6.11 已注入 · ' + (location.pathname + location.search));
+      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.11 @ ' + location.href);
     } catch (e) {}
     var oldNav = ['zhdj', 'sv', 'nav', 'v1'].join('_');   // 清掉旧版残留的死标记
     try { sessionStorage.removeItem(oldNav); } catch (e) {}
 
     document.addEventListener('pointerdown', function () { lastPointerDown = Date.now(); }, true);
+
+    // 面板交互兜底：站点路由层有可能在 document 捕获阶段把点击吞掉，这里在最外层 window 捕获阶段先接一手
+    var TAB_BY_LABEL = { '状态': 'status', '小鲸': 'whale', '配置': 'cfg', '引导': 'guide', '须知': 'tip' };
+    window.addEventListener('click', function (e) {
+      var t = e.target;
+      if (!t || !t.closest || !panel || !panel.contains(t)) return;
+      var hit = false;
+      var tabEl = t.closest('.sv-tab');
+      if (tabEl) {
+        var k = TAB_BY_LABEL[(tabEl.textContent || '').trim()];
+        if (k) { switchTab(k); hit = true; }
+      }
+      if (!hit && t.closest('#sv-min-btn')) { uiOpen = false; saveUI(); render(); hit = true; }
+      if (!hit && t.closest('#sv-zoom-btn')) { uiOpen = !uiOpen; saveUI(); render(); hit = true; }
+      if (!hit && t.closest('.sv-bar')) { uiOpen = true; saveUI(); render(); hit = true; }
+      if (hit) { e.preventDefault(); e.stopPropagation(); }
+    }, true);
+
+    // 让面板始终是 body 的最后一个节点，避免被站点后插入的高层级覆盖
+    function keepOnTop() {
+      try {
+        if (panel && panel.parentNode === document.body && document.body.lastElementChild !== panel) {
+          document.body.appendChild(panel);
+        }
+      } catch (e) {}
+    }
+    setInterval(keepOnTop, 3000);
 
     // Alt+N：本讲内下一段（不会离开本讲）
     document.addEventListener('keydown', function (e) {
@@ -1793,7 +1821,7 @@
     if (document.getElementById('zhdj-sv-mini')) return;
     var b = document.createElement('div');
     b.id = 'zhdj-sv-mini';
-    b.textContent = 'DS-Whalegirl·虹 v0.6.10';
+    b.textContent = 'DS-Whalegirl·虹 v0.6.11';
     b.style.cssText = 'position:fixed;right:14px;bottom:74px;z-index:2147483647;background:rgba(60,10,14,.88);color:#fff0ee;font:12px/1.4 system-ui,sans-serif;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,120,110,.4)';
     (document.body || document.documentElement).appendChild(b);
   }
