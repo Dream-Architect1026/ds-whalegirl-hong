@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DS-Whalegirl·虹（ZHDJ 视频增强）
 // @namespace    zhdj.cumtb.shuavideo
-// @version      0.6.8
+// @version      0.6.9
 // @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的伴学脚本——本讲内自动点「确定」、自动点下一段；本课刷完自动回列表换下一门未学完的课；断流自动拉起、固定 1x。液态玻璃面板（红色主题，卡片带立绘底纹）。不含答题/测试/提交。
 // @author       X.H
 // @match        *://zhdj.cumtb.edu.cn/*
@@ -489,8 +489,8 @@
     return true;
   }
 
-  /* ---------------- 面板自愈（v0.6.8 · 只补挂，不导航、不刷新） ----------------
-     v0.6.8 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
+  /* ---------------- 面板自愈（v0.6.9 · 只补挂，不导航、不刷新） ----------------
+     v0.6.9 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
      换讲与换课由用户手动点。这里只做一件事——面板节点被站点重绘拔掉时，就地补挂。 */
   var reviveFail = 0;
 
@@ -501,7 +501,7 @@
     try { buildUI(); } catch (e) {}
   }
 
-  /* ---------------- 两级换课（v0.6.8）：讲内自动，本课刷完自动回列表换下一门 ----------------
+  /* ---------------- 两级换课（v0.6.9）：讲内自动，本课刷完自动回列表换下一门 ----------------
      一级：本讲（分讲）之间，翻页内点下一段（在 nextChapter 里做，不跳文档）；
      二级：本课四段全 100% 后，回 /training/learn 由 courseAdvanceLoop 接管下一门未学完的课。
      两条都带节流，避免在已完成课上反复弹。 */
@@ -1286,9 +1286,9 @@
       /* 展开态：310 x 500 玻璃窗口 */
       '#zhdj-sv .sv-card{display:none;box-sizing:border-box;width:310px;height:500px;max-height:calc(100vh - 110px);',
       'flex-direction:column;border-radius:16px;overflow:hidden;position:relative;',
-      'background-image:var(--zr-spec),var(--zr-tint-hi),linear-gradient(180deg,rgba(16,3,6,.40),rgba(16,3,6,.58)),var(--zr-photo);',
-      'background-color:rgba(22,4,8,.42);background-repeat:no-repeat;',
-      'background-size:auto,auto,auto,cover;background-position:0 0,0 0,0 0,50% 26%;',
+      'background-image:var(--zr-spec),var(--zr-tint-hi),linear-gradient(180deg,rgba(16,3,6,.26),rgba(16,3,6,.44)),var(--zr-photo);',
+      'background-color:rgba(22,4,8,.30);background-repeat:no-repeat;',
+      'background-size:auto,auto,auto,cover;background-position:0 0,0 0,0 0,50% 34%;',
       'border:1px solid var(--zr-edge);box-shadow:var(--zr-shadow-hi);',
       '-webkit-backdrop-filter:blur(18px) saturate(155%);backdrop-filter:blur(18px) saturate(155%)}',
       '#zhdj-sv.sv-open .sv-card{display:flex}',
@@ -1353,8 +1353,10 @@
       '#zhdj-sv .sv-hero-s{margin-top:3px;font-size:11px;color:var(--zr-dim);padding-right:52px}',
       '#zhdj-sv .sv-tag{position:absolute;right:11px;top:11px;font-size:9.5px;padding:1px 7px;border-radius:999px;',
       'border:1px solid rgba(255,90,90,.42);background:rgba(255,90,90,.12);color:var(--zr-a);letter-spacing:.8px}',
-      /* 运行日志（复刻 log / timeline） */
-      '#zhdj-sv .sv-log{border:1px solid var(--zr-edge);border-radius:12px;background:var(--zr-tint);',
+      /* 运行日志（复刻 log / timeline）；底纹用立绘出血图，压暗只留形，不抢字 */
+      '#zhdj-sv .sv-log{border:1px solid var(--zr-edge);border-radius:12px;',
+      'background-image:linear-gradient(180deg,rgba(16,3,6,.60),rgba(16,3,6,.78)),var(--zr-photo);',
+      'background-size:auto,cover;background-position:0 0,50% 30%;background-repeat:no-repeat;',
       'box-shadow:0 6px 18px rgba(10,2,4,.28),inset 0 1px 0 var(--zr-rim-dim);',
       '-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);',
       'padding:8px 11px;margin:8px 0 0;flex:1 1 auto;min-height:88px;overflow-y:auto;overscroll-behavior:contain}',
@@ -1543,7 +1545,7 @@
     var nameSpan = mk('span'); nameSpan.textContent = 'DS-Whalegirl·虹';
     title.appendChild(nameSpan);
     var headR = mk('div', 'sv-head-r');
-    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.8';
+    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.9';
     var zoomBtn = mk('button', 'sv-icon'); zoomBtn.textContent = '⤢'; zoomBtn.title = '展开 / 收起';
     var minBtn = mk('button', 'sv-icon'); minBtn.textContent = '—'; minBtn.title = '最小化';
     headR.appendChild(ver); headR.appendChild(minBtn); headR.appendChild(zoomBtn);   // 减在左、全屏在右
@@ -1658,7 +1660,7 @@
     // 版本声明：本机出品规范样式（圆角卡片 + 两行居中）
     var foot = mk('div', 'sv-foot');
     var fs = mk('p', 'sv-sign'); fs.innerHTML = 'Developed by <b>X.H</b>';
-    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.8 · MIT License';
+    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.9 · MIT License';
     foot.appendChild(fs); foot.appendChild(fm);
     paneTip.appendChild(foot);
 
@@ -1697,8 +1699,8 @@
 
     // 注入留痕：每次注入都写一行，方便一眼看出「这页到底注没注入、装的是哪版」
     try {
-      log('v0.6.8 已注入 · ' + (location.pathname + location.search));
-      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.8 @ ' + location.href);
+      log('v0.6.9 已注入 · ' + (location.pathname + location.search));
+      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.9 @ ' + location.href);
     } catch (e) {}
     var oldNav = ['zhdj', 'sv', 'nav', 'v1'].join('_');   // 清掉旧版残留的死标记
     try { sessionStorage.removeItem(oldNav); } catch (e) {}
@@ -1791,7 +1793,7 @@
     if (document.getElementById('zhdj-sv-mini')) return;
     var b = document.createElement('div');
     b.id = 'zhdj-sv-mini';
-    b.textContent = 'DS-Whalegirl·虹 v0.6.8';
+    b.textContent = 'DS-Whalegirl·虹 v0.6.9';
     b.style.cssText = 'position:fixed;right:14px;bottom:74px;z-index:2147483000;background:rgba(60,10,14,.88);color:#fff0ee;font:12px/1.4 system-ui,sans-serif;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,120,110,.4)';
     (document.body || document.documentElement).appendChild(b);
   }
