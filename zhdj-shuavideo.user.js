@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         DS-Whalegirl·虹（ZHDJ 视频增强）
 // @namespace    zhdj.cumtb.shuavideo
-// @version      0.6.5
-// @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的伴学脚本——本讲内自动点「确定」、自动点下一段、断流自动拉起、固定 1x。换讲/换课由你自己点，脚本只保证每页都注入、进度不中断。液态玻璃面板（红色主题）。不含答题/测试/提交。
+// @version      0.6.6
+// @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的伴学脚本——本讲内自动点「确定」、自动点下一段；本课刷完自动回列表换下一门未学完的课；断流自动拉起、固定 1x。液态玻璃面板（红色主题，卡片带立绘底纹）。不含答题/测试/提交。
 // @author       X.H
 // @match        *://zhdj.cumtb.edu.cn/*
 // @match        *://*.zhdj.cumtb.edu.cn/*
@@ -476,10 +476,8 @@
       }
     }
     var target = rows[idx + 1] || null;
-    if (!target) {
-      note = '本讲最后一段，换讲请手动';
-      log('本讲最后一段，换讲请手动');
-      render();
+    if (!target) {                      // 本讲已是最后一段 → 交回「换下一门课」那一级
+      courseFinished();
       return false;
     }
     var curTxt = (rows[idx].innerText || '').replace(/\s+/g, '');
@@ -491,8 +489,8 @@
     return true;
   }
 
-  /* ---------------- 面板自愈（v0.6.5 · 只补挂，不导航、不刷新） ----------------
-     v0.6.5 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
+  /* ---------------- 面板自愈（v0.6.6 · 只补挂，不导航、不刷新） ----------------
+     v0.6.6 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
      换讲与换课由用户手动点。这里只做一件事——面板节点被站点重绘拔掉时，就地补挂。 */
   var reviveFail = 0;
 
@@ -503,14 +501,33 @@
     try { buildUI(); } catch (e) {}
   }
 
-  /* ---------------- 本讲结束：只提示，不换课（v0.6.5 删除全部换课/换讲逻辑） ---------------- */
+  /* ---------------- 两级换课（v0.6.6）：讲内自动，本课刷完自动回列表换下一门 ----------------
+     一级：本讲（分讲）之间，翻页内点下一段（在 nextChapter 里做，不跳文档）；
+     二级：本课四段全 100% 后，回 /training/learn 由 courseAdvanceLoop 接管下一门未学完的课。
+     两条都带节流，避免在已完成课上反复弹。 */
+  var backTimer = 0, backLastAt = 0, backTries = 0;
+  function backToLearn(reason) {
+    if (backTimer) return false;
+    var now = Date.now();
+    if (now - backLastAt < 90 * 1000) return false;      // 90 秒内只换一次，防抖
+    if (backTries >= 10) { note = '换课次数过多，已停下，请手动'; render(); return false; }
+    backLastAt = now; backTries++;
+    backTimer = setTimeout(function () {
+      backTimer = 0;
+      log('回课程页换下一门 › ' + reason);
+      try { location.href = 'https://zhdj.cumtb.edu.cn/training/learn'; } catch (e) {}
+    }, 4000);
+    return true;
+  }
+
   function courseFinished() {
     if (!allDone) {
       allDone = true;
-      note = '本讲已播完，换讲请手动点';
-      log('本讲已播完，换讲请手动点');
+      note = '本课已全部学完，正在换下一门';
+      log('本课已全部学完');
       render();
     }
+    backToLearn('本课学完');
   }
 
   function pctOf(txt) {
@@ -1247,6 +1264,8 @@
       '--zr-spec:linear-gradient(160deg,rgba(255,255,255,.24),rgba(255,255,255,.05) 42%,transparent 74%);',
       '--zr-shadow:0 8px 22px rgba(10,2,4,.30),inset 0 1px 0 var(--zr-rim-dim);',
       '--zr-shadow-hi:0 12px 28px rgba(10,2,4,.42),0 0 20px rgba(255,90,90,.16),inset 0 1px 0 var(--zr-rim);',
+      /* 卡片底纹：赤红立绘出血图，压在玻璃层下方，只用来看得见一点形，不抢字 */
+      '--zr-photo:image-set(url("https://dream-architect1026.github.io/ds-whalegirl-hong/assets/bg-1600.jpg") 1x);',
       '--zr-t:background .28s ease,border-color .28s ease,box-shadow .28s ease,transform .28s cubic-bezier(.34,1.2,.64,1),backdrop-filter .28s ease,-webkit-backdrop-filter .28s ease,color .2s ease;',
       'color-scheme:dark;',
       '--zr-font:"HarmonyOS Sans SC","MiSans","PingFang SC","Microsoft YaHei",system-ui,sans-serif;',
@@ -1267,8 +1286,9 @@
       /* 展开态：310 x 500 玻璃窗口 */
       '#zhdj-sv .sv-card{display:none;box-sizing:border-box;width:310px;height:500px;max-height:calc(100vh - 110px);',
       'flex-direction:column;border-radius:16px;overflow:hidden;position:relative;',
-      'background-image:var(--zr-spec),var(--zr-tint-hi),linear-gradient(180deg,rgba(255,90,90,.11),rgba(200,16,46,.17));',
+      'background-image:var(--zr-spec),var(--zr-tint-hi),linear-gradient(180deg,rgba(16,3,6,.80),rgba(16,3,6,.90)),var(--zr-photo);',
       'background-color:rgba(22,4,8,.72);background-repeat:no-repeat;',
+      'background-size:auto,auto,auto,cover;background-position:0 0,0 0,0 0,50% 22%;',
       'border:1px solid var(--zr-edge);box-shadow:var(--zr-shadow-hi);',
       '-webkit-backdrop-filter:blur(18px) saturate(155%);backdrop-filter:blur(18px) saturate(155%)}',
       '#zhdj-sv.sv-open .sv-card{display:flex}',
@@ -1523,7 +1543,7 @@
     var nameSpan = mk('span'); nameSpan.textContent = 'DS-Whalegirl·虹';
     title.appendChild(nameSpan);
     var headR = mk('div', 'sv-head-r');
-    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.5';
+    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.6';
     var zoomBtn = mk('button', 'sv-icon'); zoomBtn.textContent = '⤢'; zoomBtn.title = '展开 / 收起';
     var minBtn = mk('button', 'sv-icon'); minBtn.textContent = '—'; minBtn.title = '最小化';
     headR.appendChild(ver); headR.appendChild(minBtn); headR.appendChild(zoomBtn);   // 减在左、全屏在右
@@ -1638,7 +1658,7 @@
     // 版本声明：本机出品规范样式（圆角卡片 + 两行居中）
     var foot = mk('div', 'sv-foot');
     var fs = mk('p', 'sv-sign'); fs.innerHTML = 'Developed by <b>X.H</b>';
-    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.5 · MIT License';
+    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.6 · MIT License';
     foot.appendChild(fs); foot.appendChild(fm);
     paneTip.appendChild(foot);
 
@@ -1677,8 +1697,8 @@
 
     // 注入留痕：每次注入都写一行，方便一眼看出「这页到底注没注入、装的是哪版」
     try {
-      log('v0.6.5 已注入 · ' + (location.pathname + location.search));
-      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.5 @ ' + location.href);
+      log('v0.6.6 已注入 · ' + (location.pathname + location.search));
+      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.6 @ ' + location.href);
     } catch (e) {}
     var oldNav = ['zhdj', 'sv', 'nav', 'v1'].join('_');   // 清掉旧版残留的死标记
     try { sessionStorage.removeItem(oldNav); } catch (e) {}
@@ -1771,7 +1791,7 @@
     if (document.getElementById('zhdj-sv-mini')) return;
     var b = document.createElement('div');
     b.id = 'zhdj-sv-mini';
-    b.textContent = 'DS-Whalegirl·虹 v0.6.5';
+    b.textContent = 'DS-Whalegirl·虹 v0.6.6';
     b.style.cssText = 'position:fixed;right:14px;bottom:74px;z-index:2147483000;background:rgba(60,10,14,.88);color:#fff0ee;font:12px/1.4 system-ui,sans-serif;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,120,110,.4)';
     (document.body || document.documentElement).appendChild(b);
   }
