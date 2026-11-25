@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DS-Whalegirl·虹（ZHDJ 视频增强）
 // @namespace    zhdj.cumtb.shuavideo
-// @version      0.6.15
+// @version      0.6.16
 // @description  伴学小鲸：中国矿业大学（北京）数字党校培训平台的伴学脚本——本讲内自动点「确定」、自动点下一段；本课刷完自动回列表换下一门未学完的课；断流自动拉起、固定 1x。液态玻璃面板（红色主题，卡片带立绘底纹）。不含答题/测试/提交。
 // @author       X.H
 // @match        *://zhdj.cumtb.edu.cn/*
@@ -442,7 +442,7 @@
       var r = el.getBoundingClientRect();
       if (r.height > 140 || r.height < 20) continue;
       loose.push(el);
-      // v0.6.15：分讲行必须「百分比 + 标题」齐全，排掉只有时间/只有百分比的碎片节点，
+      // v0.6.16：分讲行必须「百分比 + 标题」齐全，排掉只有时间/只有百分比的碎片节点，
       // 否则 rows 里混进碎片会导致 currentIndex 认错、在同一段上反复点
       if (!/\d+\s*%/.test(t)) continue;
       if (t.replace(/[0-9:%.、,，\s]/g, '').length < 4) continue;
@@ -469,7 +469,7 @@
   function nextChapter() {
     var rows = chapterRows();
     if (!rows.length) return false;
-    // v0.6.15：本课所有分讲都已 100% → 不再在末尾反复点，直接进二级换课
+    // v0.6.16：本课所有分讲都已 100% → 不再在末尾反复点，直接进二级换课
     if (rows.length >= 2 && rows.every(isDone)) { courseFinished(); return false; }
     var idx = -1;
     for (var i = 0; i < rows.length; i++) {
@@ -506,7 +506,7 @@
     return true;
   }
 
-  // v0.6.15：讲末统一收口——全 100% 就换课；还有下一段就推进；都没有就等平台结算（限次）
+  // v0.6.16：讲末统一收口——全 100% 就换课；还有下一段就推进；都没有就等平台结算（限次）
   var endTries = 0;
   function endOfChapter() {
     var rows = chapterRows();
@@ -518,8 +518,8 @@
     return false;
   }
 
-  /* ---------------- 面板自愈（v0.6.15 · 只补挂，不导航、不刷新） ----------------
-     v0.6.15 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
+  /* ---------------- 面板自愈（v0.6.16 · 只补挂，不导航、不刷新） ----------------
+     v0.6.16 起彻底取消跨讲/跨课自动跳转：整页导航、换讲守卫、强制刷新全部删除，
      换讲与换课由用户手动点。这里只做一件事——面板节点被站点重绘拔掉时，就地补挂。 */
   var reviveFail = 0;
 
@@ -530,7 +530,7 @@
     try { buildUI(); } catch (e) {}
   }
 
-  /* ---------------- 两级换课（v0.6.15）：讲内自动，本课刷完自动回列表换下一门 ----------------
+  /* ---------------- 两级换课（v0.6.16）：讲内自动，本课刷完自动回列表换下一门 ----------------
      一级：本讲（分讲）之间，翻页内点下一段（在 nextChapter 里做，不跳文档）；
      二级：本课四段全 100% 后，回 /training/learn 由 courseAdvanceLoop 接管下一门未学完的课。
      两条都带节流，避免在已完成课上反复弹。 */
@@ -1681,7 +1681,7 @@
     var nameSpan = mk('span'); nameSpan.textContent = 'DS-Whalegirl·虹';
     title.appendChild(nameSpan);
     var headR = mk('div', 'sv-head-r');
-    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.15';
+    var ver = mk('span', 'sv-ver'); ver.textContent = 'v0.6.16';
     var zoomBtn = mk('button', 'sv-icon'); zoomBtn.textContent = '⤢'; zoomBtn.title = '展开 / 收起'; zoomBtn.id = 'sv-zoom-btn';
     var minBtn = mk('button', 'sv-icon'); minBtn.textContent = '—'; minBtn.title = '最小化'; minBtn.id = 'sv-min-btn';
     headR.appendChild(ver); headR.appendChild(minBtn); headR.appendChild(zoomBtn);   // 减在左、全屏在右
@@ -1795,7 +1795,7 @@
     // 版本声明：本机出品规范样式（圆角卡片 + 两行居中）
     var foot = mk('div', 'sv-foot');
     var fs = mk('p', 'sv-sign'); fs.innerHTML = 'Developed by <b>X.H</b>';
-    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.15 · MIT License';
+    var fm = mk('p', 'sv-meta'); fm.textContent = 'DS-Whalegirl·虹 v0.6.16 · MIT License';
     foot.appendChild(fs); foot.appendChild(fm);
     paneTip.appendChild(foot);
 
@@ -1835,8 +1835,8 @@
 
     // 注入留痕：每次注入都写一行，方便一眼看出「这页到底注没注入、装的是哪版」
     try {
-      log('v0.6.15 已注入 · ' + (location.pathname + location.search));
-      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.15 @ ' + location.href);
+      log('v0.6.16 已注入 · ' + (location.pathname + location.search));
+      if (window.console && console.info) console.info('[ZHDJ-SV] injected v0.6.16 @ ' + location.href);
     } catch (e) {}
     var oldNav = ['zhdj', 'sv', 'nav', 'v1'].join('_');   // 清掉旧版残留的死标记
     try { sessionStorage.removeItem(oldNav); } catch (e) {}
@@ -1959,13 +1959,18 @@
     if (document.getElementById('zhdj-sv-mini')) return;
     var b = document.createElement('div');
     b.id = 'zhdj-sv-mini';
-    b.textContent = 'DS-Whalegirl·虹 v0.6.15';
+    b.textContent = 'DS-Whalegirl·虹 v0.6.16';
     b.style.cssText = 'position:fixed;right:14px;bottom:74px;z-index:2147483647;background:rgba(60,10,14,.88);color:#fff0ee;font:12px/1.4 system-ui,sans-serif;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,120,110,.4)';
     (document.body || document.documentElement).appendChild(b);
   }
 
   // 非视频页：反复找「继续学习 / 开始学习 / 去学习」入口，接管下一门课
+  // v0.6.16：本课刷完后平台常把页面停在「本组课程全 100%」的课程组页，当前页没有可学入口，
+  // 只等 90 秒就会彻底停住。这里改成 30 秒找不到就强制重进一次 /training/learn（最多 2 次）。
   var advTimer = 0, advTries = 0;
+  var advReenter = 0;
+  try { advReenter = parseInt(sessionStorage.getItem('zhdj_sv_reenter') || '0', 10) || 0; } catch (e) { advReenter = 0; }
+
   function courseAdvanceLoop() {
     if (advTimer) return;
     advTries = 0;
@@ -1982,6 +1987,14 @@
         }, 9000);
         return;
       }
+      if (advTries >= 15 && advReenter < 2 && !/video-?details?/i.test(location.pathname)) {
+        advTries = 0; advReenter++;
+        try { sessionStorage.setItem('zhdj_sv_reenter', String(advReenter)); } catch (e) {}
+        log('本页没有可学课程，重进学习页 ' + advReenter + '/2');
+        clearInterval(advTimer); advTimer = 0;
+        try { location.href = 'https://zhdj.cumtb.edu.cn/training/learn?sv=' + Date.now(); } catch (e) {}
+        return;
+      }
       if (advTries > 45) {
         clearInterval(advTimer); advTimer = 0;
         note = '未找到下一门课程入口，请手动进入';
@@ -1991,6 +2004,7 @@
 
   function route() {
     if (isVideoPage()) {
+      try { sessionStorage.removeItem('zhdj_sv_reenter'); } catch (e) {}
       try { revive(); } catch (e) {}
       bootPanel();
     } else if (!booted) {
